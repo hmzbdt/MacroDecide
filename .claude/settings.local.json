@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx expo start)",
+      "Bash(npx expo install:*)",
+      "Bash(timeout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh auth:*)",
+      "Bash(git config:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "WebSearch",
+      "WebFetch(domain:fastfoodnutrition.org)",
+      "WebFetch(domain:www.mynetdiary.com)",
+      "WebFetch(domain:www.chipotle.com)",
+      "WebFetch(domain:www.eatthismuch.com)",
+      "WebFetch(domain:www.nutritionix.com)",
+      "WebFetch(domain:chipotlecalorie.com)"
+    ]
+  }
+}
