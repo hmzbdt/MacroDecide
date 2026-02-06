@@ -100,3 +100,46 @@ export function generateAnalysis(target: Macros, item: Macros): string {
   if (notes.length === 1) return notes[0] + '.';
   return notes[0] + ', but ' + notes.slice(1).join(' and ') + '.';
 }
+
+/**
+ * Generates a concise pros/cons analysis for cleaner UI
+ */
+export function generateConciseAnalysis(target: Macros, item: Macros): { pros: string[]; cons: string[] } {
+  const pros: string[] = [];
+  const cons: string[] = [];
+
+  // Protein analysis
+  if (target.protein > 0) {
+    if (Math.abs(item.protein - target.protein) <= target.protein * 0.1) {
+      pros.push('On-target Protein');
+    } else if (item.protein > target.protein * 1.1) {
+      pros.push('High Protein');
+    } else if (item.protein < target.protein * 0.8) {
+      cons.push('Low Protein');
+    }
+  }
+
+  // Carbs analysis
+  if (target.carbs > 0) {
+    if (Math.abs(item.carbs - target.carbs) <= target.carbs * 0.1) {
+      pros.push('On-target Carbs');
+    } else if (item.carbs > target.carbs * 1.2) {
+      cons.push('High Carbs');
+    } else if (item.carbs < target.carbs * 0.5) {
+      pros.push('Low Carbs');
+    }
+  }
+
+  // Fat analysis
+  if (target.fat > 0) {
+    if (Math.abs(item.fat - target.fat) <= target.fat * 0.1) {
+      pros.push('On-target Fat');
+    } else if (item.fat > target.fat * 1.2) {
+      cons.push('High Fat');
+    } else if (item.fat < target.fat * 0.5) {
+      pros.push('Low Fat');
+    }
+  }
+
+  return { pros, cons };
+}

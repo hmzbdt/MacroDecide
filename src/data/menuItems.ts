@@ -39,4 +39,22 @@ export const WINGSTOP: MenuItem[] = [
   },
 ];
 
-export const ALL_ITEMS: MenuItem[] = [...CHICK_FIL_A, ...WINGSTOP, ...CHIPOTLE];
+export const WHATABURGER: MenuItem[] = [
+  {
+    name: 'Whataburger (No Bun)',
+    restaurant: 'Whataburger',
+    macros: { protein: 25, carbs: 8, fat: 32 },
+  },
+  {
+    name: 'Grilled Chicken Sandwich',
+    restaurant: 'Whataburger',
+    macros: { protein: 32, carbs: 49, fat: 8 },
+  },
+  {
+    name: "Whatachick'n Strips (3pc)",
+    restaurant: 'Whataburger',
+    macros: { protein: 25, carbs: 22, fat: 14 },
+  },
+];
+
+export const ALL_ITEMS: MenuItem[] = [...CHICK_FIL_A, ...WINGSTOP, ...WHATABURGER, ...CHIPOTLE];

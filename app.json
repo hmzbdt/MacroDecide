@@ -13,7 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "MacroDecide needs camera access to scan product barcodes and look up nutritional information.",
+        "NSLocationWhenInUseUsageDescription": "MacroDecide uses your location to find the nearest restaurants matching your macro targets."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,6 +28,20 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "MacroDecide needs camera access to scan product barcodes and look up nutritional information."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "MacroDecide uses your location to find the nearest restaurants matching your macro targets."
+        }
+      ]
+    ]
   }
 }
