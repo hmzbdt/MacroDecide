@@ -8,6 +8,7 @@ export interface MenuItem {
   name: string;
   restaurant: string;
   macros: Macros;
+  imageUrl?: string;
 }
 
 /**

@@ -52,7 +52,7 @@ function buildCombo(baseIndex: number, modifierKeys: string[]): MenuItem {
   const modNames = mods.map((m) => m.name).join(' + ');
   const name = `${base.name} — ${modNames}`;
 
-  return { name, restaurant: 'Chipotle', macros };
+  return { name, restaurant: 'Chipotle', macros, imageUrl: 'https://images.unsplash.com/photo-1623653387945-2fd25214f8fc?w=400&h=300&fit=crop' };
 }
 
 export const CHIPOTLE: MenuItem[] = COMBOS.map(([baseIndex, ...modifierKeys]) =>

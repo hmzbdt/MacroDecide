@@ -144,6 +144,7 @@ function generateMockLocation(userLat, userLon, restaurantName) {
     distance: distance,
     withinRadius: distance <= MAX_SEARCH_RADIUS_MILES,
     placeId: RESTAURANT_CHAINS[restaurantName]?.placeId || 'mock_place',
+    isMock: true,
   };
 }
 
@@ -199,27 +200,47 @@ export async function findAllNearbyRestaurants(userLocation) {
  * @param {number} destLat - Destination latitude
  * @param {number} destLon - Destination longitude
  * @param {string} label - Location label/name
+ * @param {boolean} isMock - Whether coordinates are mock data
  */
-export function openMapsWithDirections(destLat, destLon, label) {
-  const encodedLabel = encodeURIComponent(label);
+export function openMapsWithDirections(destLat, destLon, label, isMock = false) {
+  // If mock data, search for the restaurant "near me" instead of
+  // navigating to a random coordinate
+  if (isMock) {
+    const searchQuery = encodeURIComponent(`${label} near me`);
+    const url = Platform.select({
+      ios: `http://maps.apple.com/?q=${searchQuery}`,
+      android: `geo:0,0?q=${searchQuery}`,
+      default: `https://www.google.com/maps/search/?api=1&query=${searchQuery}`,
+    });
 
-  // Use platform-specific URL schemes
+    console.log('[MacroDecide] Navigation URL (search):', url);
+
+    Linking.openURL(url).catch((err) => {
+      const fallback = `https://www.google.com/maps/search/?api=1&query=${searchQuery}`;
+      console.log('[MacroDecide] Fallback URL:', fallback);
+      Linking.openURL(fallback);
+    });
+    return;
+  }
+
+  // Real coordinates — navigate directly
+  const encodedLabel = encodeURIComponent(label);
   const url = Platform.select({
-    ios: `maps://app?daddr=${destLat},${destLon}&q=${encodedLabel}`,
+    ios: `http://maps.apple.com/?daddr=${destLat},${destLon}&q=${encodedLabel}`,
     android: `google.navigation:q=${destLat},${destLon}`,
     default: `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLon}`,
   });
 
-  // Fallback to Google Maps web URL if native app isn't available
+  console.log('[MacroDecide] Navigation URL (directions):', url);
+
   Linking.canOpenURL(url)
     .then((supported) => {
       if (supported) {
         Linking.openURL(url);
       } else {
-        // Fallback to Google Maps web
-        Linking.openURL(
-          `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLon}&destination_place_id=${encodedLabel}`
-        );
+        const fallback = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLon}`;
+        console.log('[MacroDecide] Fallback URL:', fallback);
+        Linking.openURL(fallback);
       }
     })
     .catch((err) => console.error('Error opening maps:', err));
