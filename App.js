@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import {
   StyleSheet,
@@ -28,6 +29,7 @@ import {
 import { ALL_ITEMS } from './src/data/menuItems';
 import { SNACKS } from './src/data/snacks';
 import { RECIPES, RecipeItem } from './src/data/recipes';
+import { STAPLE_INGREDIENTS } from './src/data/staples';
 import BarcodeScanner from './src/components/BarcodeScanner';
 import MatchRing from './src/components/MatchRing';
 import MacroPills from './src/components/MacroPills';
@@ -45,6 +47,8 @@ const HISTORY_KEY = '@macrodecide_history';
 const BASELINE_KEY = '@macrodecide_baseline';
 const LAST_DATE_KEY = '@macrodecide_last_date';
 const ACTIVITY_KEY = '@macrodecide_daily_activity';
+const CUSTOM_MEALS_KEY = '@macrodecide_custom_meals';
+const USER_STAPLES_KEY = '@macrodecide_user_staples';
 
 const COLORS = {
   darkGreen: '#004d4d',
@@ -52,7 +56,7 @@ const COLORS = {
   accentGreen: '#00796b',
   white: '#ffffff',
   lightGray: '#e0e0e0',
-  muted: '#8a8a8a',
+  muted: '#A0A0A0',
 };
 
 // ── Sub-view header: home icon (left) + centered title + optional back link ──
@@ -61,7 +65,7 @@ function SubViewHeader({ title, onHome, backLabel, onBack }) {
     <View style={subHeaderStyles.wrapper}>
       <View style={subHeaderStyles.bar}>
         <TouchableOpacity style={subHeaderStyles.homeBtn} onPress={onHome} activeOpacity={0.7}>
-          <Text style={subHeaderStyles.homeIcon}>⌂</Text>
+          <Ionicons name="home-outline" size={22} color="#e0e0e0" />
         </TouchableOpacity>
         <Text style={subHeaderStyles.title} numberOfLines={1}>{title}</Text>
         <View style={subHeaderStyles.spacer} />
@@ -90,17 +94,11 @@ const subHeaderStyles = StyleSheet.create({
     paddingVertical: 12,
   },
   homeBtn: {
-    width: 36,
-    height: 36,
+    padding: 12,
     borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.07)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  homeIcon: {
-    fontSize: 18,
-    color: '#d0d0d0',
-    lineHeight: 22,
   },
   title: {
     flex: 1,
@@ -111,7 +109,7 @@ const subHeaderStyles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   spacer: {
-    width: 36,
+    width: 46,
   },
   backRow: {
     paddingHorizontal: 20,
@@ -119,7 +117,7 @@ const subHeaderStyles = StyleSheet.create({
   },
   backRowText: {
     fontSize: 13,
-    color: '#8a8a8a',
+    color: '#A0A0A0',
   },
 });
 // ─────────────────────────────────────────────────────────────────────────────
@@ -331,6 +329,7 @@ function scaleIngredient(ingredientStr, factor) {
   });
 }
 // ──────────────────────────────────────────────────────────────────────────────
+
 const PREF_LABELS = {
   spicy: 'Spicy',
   vegetarian: 'Vegetarian',
@@ -446,6 +445,29 @@ export default function App() {
   const [showRecipeDetail, setShowRecipeDetail] = useState(false);
   const [recipeFilters, setRecipeFilters] = useState({ spicy: false, vegetarian: false, under30: false, highProtein: false });
   const [cookRecipeStep, setCookRecipeStep] = useState('macros'); // 'macros' | 'filter' | 'results'
+
+  // Meal Builder state
+  const [mealBuilderStep, setMealBuilderStep] = useState('targets'); // 'targets' | 'build'
+  const [mbTargetProtein, setMbTargetProtein] = useState('');
+  const [mbTargetCarbs, setMbTargetCarbs] = useState('');
+  const [mbTargetFat, setMbTargetFat] = useState('');
+  const [mbIngredients, setMbIngredients] = useState({}); // { id: grams }
+  const [mbActiveIngredient, setMbActiveIngredient] = useState(null);
+  const [mbUnit, setMbUnit] = useState('g'); // 'g' | 'oz'
+  const [mbEditingText, setMbEditingText] = useState(''); // raw text in the active stepper TextInput
+  const [showMealBuilderFinalize, setShowMealBuilderFinalize] = useState(false);
+  const [mealBuilderMealName, setMealBuilderMealName] = useState('');
+  const [savedCustomMeals, setSavedCustomMeals] = useState([]);
+  // User-created staple ingredients
+  const [userStaples, setUserStaples] = useState([]);
+  const [showAddCustomFood, setShowAddCustomFood] = useState(false);
+  const [customFoodName, setCustomFoodName] = useState('');
+  const [customFoodProtein, setCustomFoodProtein] = useState('');
+  const [customFoodCarbs, setCustomFoodCarbs] = useState('');
+  const [customFoodFat, setCustomFoodFat] = useState('');
+  const mbPulseAnim = useRef(new Animated.Value(0)).current;
+  const mbWasHitRef = useRef(false);
+
   const resultOpacity = useRef(new Animated.Value(0)).current;
   const resultBorderColor = useRef(new Animated.Value(0)).current;
   const resultSlideY = useRef(new Animated.Value(30)).current;
@@ -453,16 +475,65 @@ export default function App() {
   const scannedSlideY = useRef(new Animated.Value(30)).current;
   const inputFlash = useRef(new Animated.Value(0)).current;
 
+  // Meal Builder: pulse dashboard green when match ≥ 95%
+  useEffect(() => {
+    if (currentView !== 'mealBuilder' || mealBuilderStep !== 'build') {
+      mbPulseAnim.stopAnimation();
+      mbPulseAnim.setValue(0);
+      mbWasHitRef.current = false;
+      return;
+    }
+    const tP = parseFloat(mbTargetProtein) || 0;
+    const tC = parseFloat(mbTargetCarbs) || 0;
+    const tF = parseFloat(mbTargetFat) || 0;
+    if (tP + tC + tF === 0) return;
+    let p = 0, c = 0, f = 0;
+    for (const [id, grams] of Object.entries(mbIngredients)) {
+      if (!grams) continue;
+      const ing = STAPLE_INGREDIENTS.find(i => i.id === id) || userStaples.find(i => i.id === id);
+      if (!ing) continue;
+      p += ing.macrosPer100g.protein * grams / 100;
+      c += ing.macrosPer100g.carbs * grams / 100;
+      f += ing.macrosPer100g.fat * grams / 100;
+    }
+    const pct = calculateMatchPercentage({ protein: tP, carbs: tC, fat: tF }, { protein: p, carbs: c, fat: f });
+    const isHit = pct >= 95;
+    if (isHit && !mbWasHitRef.current) {
+      mbPulseAnim.setValue(0);
+      Animated.sequence([
+        Animated.timing(mbPulseAnim, { toValue: 1, duration: 450, useNativeDriver: false }),
+        Animated.timing(mbPulseAnim, { toValue: 0.3, duration: 450, useNativeDriver: false }),
+        Animated.timing(mbPulseAnim, { toValue: 1, duration: 450, useNativeDriver: false }),
+        Animated.timing(mbPulseAnim, { toValue: 0.3, duration: 450, useNativeDriver: false }),
+        Animated.timing(mbPulseAnim, { toValue: 1, duration: 450, useNativeDriver: false }),
+      ]).start();
+    } else if (!isHit) {
+      mbPulseAnim.stopAnimation();
+      Animated.timing(mbPulseAnim, { toValue: 0, duration: 300, useNativeDriver: false }).start();
+    }
+    mbWasHitRef.current = isHit;
+  }, [mbIngredients, mbTargetProtein, mbTargetCarbs, mbTargetFat, currentView, mealBuilderStep, userStaples]);
+
+  // Meal Builder: reformat editing text when unit changes
+  useEffect(() => {
+    if (mbActiveIngredient) {
+      const grams = mbIngredients[mbActiveIngredient] || 0;
+      setMbEditingText(mbUnit === 'oz' ? (grams / 28.35).toFixed(1) : grams.toString());
+    }
+  }, [mbUnit]);
+
   // Load saved macros, history, baseline, and check for day reset
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [savedTargets, savedHistory, savedBaseline, savedDate, savedActivity] = await Promise.all([
+        const [savedTargets, savedHistory, savedBaseline, savedDate, savedActivity, savedCustomMealsData, savedUserStaplesData] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(HISTORY_KEY),
           AsyncStorage.getItem(BASELINE_KEY),
           AsyncStorage.getItem(LAST_DATE_KEY),
           AsyncStorage.getItem(ACTIVITY_KEY),
+          AsyncStorage.getItem(CUSTOM_MEALS_KEY),
+          AsyncStorage.getItem(USER_STAPLES_KEY),
         ]);
 
         // Load baseline (or use defaults)
@@ -514,6 +585,14 @@ export default function App() {
 
         if (savedHistory) {
           setHistory(JSON.parse(savedHistory));
+        }
+
+        if (savedCustomMealsData) {
+          setSavedCustomMeals(JSON.parse(savedCustomMealsData));
+        }
+
+        if (savedUserStaplesData) {
+          setUserStaples(JSON.parse(savedUserStaplesData));
         }
       } catch (_) {
         // First launch or corrupted data — start fresh
@@ -738,9 +817,39 @@ export default function App() {
     setNoMatch(false);
     setResultQuantities([1, 1, 1]);
     setResultImageErrors([false, false, false]);
+    if (view === 'eatAtHome') {
+      setRecipeFilters({ spicy: false, vegetarian: false, under30: false, highProtein: false });
+      setCookRecipeStep('filter');
+      const mealsLeft = getMealsRemaining();
+      const p = Math.max(0, Math.round((parseFloat(remainingProtein) || 0) / mealsLeft));
+      const c = Math.max(0, Math.round((parseFloat(remainingCarbs) || 0) / mealsLeft));
+      const f = Math.max(0, Math.round((parseFloat(remainingFat) || 0) / mealsLeft));
+      setSearchProtein(p > 0 ? p.toString() : '');
+      setSearchCarbs(c > 0 ? c.toString() : '');
+      setSearchFat(f > 0 ? f.toString() : '');
+    }
     if (view === 'cookRecipe') {
       setCookRecipeStep('macros');
       setRecipeFilters({ spicy: false, vegetarian: false, under30: false, highProtein: false });
+    }
+    if (view === 'mealBuilder') {
+      setMealBuilderStep('targets');
+      setMbIngredients({});
+      setMbActiveIngredient(null);
+      setMbUnit('g');
+      setMbEditingText('');
+      setMealBuilderMealName('');
+      setShowMealBuilderFinalize(false);
+      mbWasHitRef.current = false;
+      mbPulseAnim.setValue(0);
+      // Pre-fill targets with smart-split values
+      const mealsLeft = getMealsRemaining();
+      const p = Math.max(0, Math.round((parseFloat(remainingProtein) || 0) / mealsLeft));
+      const c = Math.max(0, Math.round((parseFloat(remainingCarbs) || 0) / mealsLeft));
+      const f = Math.max(0, Math.round((parseFloat(remainingFat) || 0) / mealsLeft));
+      setMbTargetProtein(p > 0 ? p.toString() : '');
+      setMbTargetCarbs(c > 0 ? c.toString() : '');
+      setMbTargetFat(f > 0 ? f.toString() : '');
     }
     setCurrentView(view);
   };
@@ -1003,6 +1112,48 @@ export default function App() {
     smartFill(true);
   };
 
+  const handleMbSmartFill = useCallback(() => {
+    const mealsLeft = getMealsRemaining();
+    const pVal = Math.max(0, parseFloat(remainingProtein) || 0);
+    const cVal = Math.max(0, parseFloat(remainingCarbs) || 0);
+    const fVal = Math.max(0, parseFloat(remainingFat) || 0);
+    const p = pVal > 0 ? Math.round(pVal / mealsLeft) : 0;
+    const c = cVal > 0 ? Math.round(cVal / mealsLeft) : 0;
+    const f = fVal > 0 ? Math.round(fVal / mealsLeft) : 0;
+    setMbTargetProtein(p.toString());
+    setMbTargetCarbs(c.toString());
+    setMbTargetFat(f.toString());
+    flashInputs();
+  }, [remainingProtein, remainingCarbs, remainingFat, flashInputs]);
+
+  const handleAddCustomFood = async () => {
+    const name = customFoodName.trim();
+    if (!name) return;
+    const protein = parseFloat(customFoodProtein) || 0;
+    const carbs   = parseFloat(customFoodCarbs)   || 0;
+    const fat     = parseFloat(customFoodFat)     || 0;
+    // Auto-assign category by dominant caloric contribution
+    const pCal = protein * 4, cCal = carbs * 4, fCal = fat * 9;
+    const maxCal = Math.max(pCal, cCal, fCal);
+    const category = maxCal === fCal ? 'Fats' : maxCal === cCal ? 'Carbs' : 'Proteins';
+    const newStaple = {
+      id: `custom_${Date.now()}`,
+      name,
+      category,
+      macrosPer100g: { protein, carbs, fat },
+      isCustom: true,
+    };
+    const updated = [...userStaples, newStaple];
+    setUserStaples(updated);
+    await AsyncStorage.setItem(USER_STAPLES_KEY, JSON.stringify(updated));
+    // Reset form and close modal
+    setCustomFoodName('');
+    setCustomFoodProtein('');
+    setCustomFoodCarbs('');
+    setCustomFoodFat('');
+    setShowAddCustomFood(false);
+  };
+
   // Triggers the recipe search from Step 2, then advances to Step 3 (results)
   const handleRecipeSearch = () => {
     const target = {
@@ -1027,9 +1178,108 @@ export default function App() {
     </View>
   );
 
+  // ─── Meal Builder: derived macros, match %, suggestion ───────────────────────
+  // Merge hardcoded staples with user-created staples for the full ingredient list
+  const allStaples = [...STAPLE_INGREDIENTS, ...userStaples];
+
+  const mbCurrentMacros = (() => {
+    let p = 0, c = 0, f = 0;
+    for (const [id, grams] of Object.entries(mbIngredients)) {
+      if (!grams || grams <= 0) continue;
+      const ingredient = allStaples.find(i => i.id === id);
+      if (!ingredient) continue;
+      const factor = grams / 100;
+      p += ingredient.macrosPer100g.protein * factor;
+      c += ingredient.macrosPer100g.carbs * factor;
+      f += ingredient.macrosPer100g.fat * factor;
+    }
+    return {
+      protein: Math.round(p * 10) / 10,
+      carbs:   Math.round(c * 10) / 10,
+      fat:     Math.round(f * 10) / 10,
+    };
+  })();
+
+  const mbMatchPct = (() => {
+    const tP = parseFloat(mbTargetProtein) || 0;
+    const tC = parseFloat(mbTargetCarbs) || 0;
+    const tF = parseFloat(mbTargetFat) || 0;
+    if (tP + tC + tF === 0) return null;
+    return calculateMatchPercentage(
+      { protein: tP, carbs: tC, fat: tF },
+      mbCurrentMacros,
+    );
+  })();
+
+  const mbIsTargetHit = mbMatchPct !== null && mbMatchPct >= 95;
+
+  const mbSuggestion = (() => {
+    if (currentView !== 'mealBuilder' || mealBuilderStep !== 'build') return null;
+    const total = mbCurrentMacros.protein + mbCurrentMacros.carbs + mbCurrentMacros.fat;
+    if (total < 20) return null;
+    let best = null, bestScore = 0;
+    for (const recipe of RECIPES) {
+      const score = calculateMatchPercentage(mbCurrentMacros, recipe.macros);
+      if (score >= 70 && score > bestScore) { bestScore = score; best = recipe; }
+    }
+    return best ? { recipe: best, score: bestScore } : null;
+  })();
+
+  const handleMealBuilderFinalize = async () => {
+    const name = mealBuilderMealName.trim() || 'Custom Meal';
+    const macros = {
+      protein: Math.round(mbCurrentMacros.protein),
+      carbs:   Math.round(mbCurrentMacros.carbs),
+      fat:     Math.round(mbCurrentMacros.fat),
+    };
+
+    // Deduct from remaining fuel gauge
+    setRemainingProtein(((parseFloat(remainingProtein) || 0) - macros.protein).toString());
+    setRemainingCarbs(((parseFloat(remainingCarbs) || 0) - macros.carbs).toString());
+    setRemainingFat(((parseFloat(remainingFat) || 0) - macros.fat).toString());
+
+    // Add to daily activity
+    const activityEntry = {
+      id: Date.now().toString(),
+      name,
+      restaurant: 'Meal Builder',
+      macros,
+      time: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+    };
+    const updatedActivity = [activityEntry, ...dailyActivity];
+    setDailyActivity(updatedActivity);
+    await AsyncStorage.setItem(ACTIVITY_KEY, JSON.stringify(updatedActivity));
+
+    // Save to custom meals library
+    const customEntry = {
+      id: Date.now().toString(),
+      name,
+      date: new Date().toLocaleDateString(),
+      macros,
+      ingredients: Object.entries(mbIngredients)
+        .filter(([, g]) => g > 0)
+        .map(([id, grams]) => {
+          const ing = STAPLE_INGREDIENTS.find(i => i.id === id) || userStaples.find(i => i.id === id);
+          return { name: ing?.name || id, grams };
+        }),
+    };
+    const updatedCustomMeals = [customEntry, ...savedCustomMeals].slice(0, 20);
+    setSavedCustomMeals(updatedCustomMeals);
+    await AsyncStorage.setItem(CUSTOM_MEALS_KEY, JSON.stringify(updatedCustomMeals));
+
+    // Reset and go home
+    setShowMealBuilderFinalize(false);
+    setMealBuilderMealName('');
+    flashInputs();
+    navigateTo('home');
+  };
+  // ─────────────────────────────────────────────────────────────────────────────
+
   const viewTitle = currentView === 'eatOut' ? 'Eat Out'
                   : currentView === 'quickSnack' ? 'Quick Snack'
                   : currentView === 'cookRecipe' ? 'Cook a Recipe'
+                  : currentView === 'mealBuilder' ? 'Meal Builder'
+                  : currentView === 'eatAtHome' ? 'Eat at Home'
                   : '';
 
   const findButtonText = currentView === 'quickSnack' ? 'Find a Snack'
@@ -1145,19 +1395,6 @@ export default function App() {
       <TouchableOpacity style={styles.resetToBaselineButton} onPress={resetToBaseline}>
         <Text style={styles.resetToBaselineText}>Reset to Daily Goals</Text>
       </TouchableOpacity>
-      {currentView === 'home' && (
-        <View style={styles.locationStatus}>
-          {locationLoading ? (
-            <Text style={styles.locationStatusText}>Locating nearby restaurants...</Text>
-          ) : userLocation ? (
-            <Text style={styles.locationStatusText}>
-              {nearbyRestaurants.size} restaurants within {getMaxRadius()} miles
-            </Text>
-          ) : (
-            <Text style={styles.locationStatusText}>Enable location for nearby results</Text>
-          )}
-        </View>
-      )}
     </View>
   );
 
@@ -1549,43 +1786,20 @@ export default function App() {
 
                   {renderFuelGauge()}
 
-                  {/* 4-Button Intent Grid */}
-                  <View style={styles.intentGrid}>
-                    <TouchableOpacity
-                      style={styles.intentButton}
-                      onPress={() => navigateTo('eatOut')}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.intentButtonText}>Eat Out</Text>
-                      <Text style={styles.intentButtonSub}>Nearby restaurants</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.intentButton}
-                      onPress={() => setShowScanner(true)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.intentButtonText}>Scan Barcode</Text>
-                      <Text style={styles.intentButtonSub}>Check any product</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.intentButton}
-                      onPress={() => navigateTo('quickSnack')}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.intentButtonText}>Quick Snack</Text>
-                      <Text style={styles.intentButtonSub}>Grab & go options</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.intentButton}
-                      onPress={() => navigateTo('cookRecipe')}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.intentButtonText}>Cook a Recipe</Text>
-                      <Text style={styles.intentButtonSub}>Homemade meals</Text>
-                    </TouchableOpacity>
+                  {/* 2×2 Intent Grid */}
+                  <View style={styles.homeGrid}>
+                    {[
+                      { label: 'Eat Out',      sub: 'Nearby restaurants',  icon: 'storefront-outline', onPress: () => navigateTo('eatOut') },
+                      { label: 'Eat at Home',  sub: 'Cook or build a meal', icon: 'home-outline',      onPress: () => navigateTo('eatAtHome') },
+                      { label: 'Scan Barcode', sub: 'Check any product',    icon: 'scan-outline',      onPress: () => setShowScanner(true) },
+                      { label: 'Quick Snack',  sub: 'Grab & go options',    icon: 'fast-food-outline', onPress: () => navigateTo('quickSnack') },
+                    ].map(({ label, sub, icon, onPress }) => (
+                      <TouchableOpacity key={label} style={styles.homeCard} onPress={onPress} activeOpacity={0.7}>
+                        <Ionicons name={icon} size={28} color={COLORS.accentGreen} />
+                        <Text style={styles.homeCardLabel}>{label}</Text>
+                        <Text style={styles.homeCardSub}>{sub}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
 
                   {renderScannedResult()}
@@ -1707,8 +1921,8 @@ export default function App() {
                   <SubViewHeader
                     title="Cook a Recipe"
                     onHome={goHome}
-                    backLabel="← Macros"
-                    onBack={() => setCookRecipeStep('macros')}
+                    backLabel="← Eat at Home"
+                    onBack={() => setCurrentView('eatAtHome')}
                   />
                   {renderCookRecipeStepIndicator(2)}
 
@@ -1778,6 +1992,549 @@ export default function App() {
                   >
                     <Text style={styles.resetButtonText}>Back to Home</Text>
                   </TouchableOpacity>
+                </>
+
+              ) : currentView === 'mealBuilder' && mealBuilderStep === 'targets' ? (
+                <>
+                  {/* MEAL BUILDER — Step 1: Set Targets */}
+                  <SubViewHeader title="Meal Builder" onHome={goHome} />
+
+                  {renderFuelGauge()}
+
+                  <View style={styles.inputContainer}>
+                    <View style={styles.inputHeaderRow}>
+                      <Text style={styles.inputSectionLabel}>Target Macros</Text>
+                      <TouchableOpacity
+                        style={styles.smartFillButton}
+                        onPress={handleMbSmartFill}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.smartFillButtonText}>Smart Split</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Protein (g)</Text>
+                      <Animated.View
+                        style={[
+                          styles.inputWrapper,
+                          {
+                            backgroundColor: inputFlash.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [COLORS.darkGreen, 'rgba(0, 150, 136, 0.6)'],
+                            }),
+                          },
+                        ]}
+                      >
+                        <TextInput
+                          style={styles.inputInner}
+                          value={mbTargetProtein}
+                          onChangeText={setMbTargetProtein}
+                          keyboardType="numeric"
+                          placeholder="50"
+                          placeholderTextColor={COLORS.lightGray}
+                          returnKeyType="done"
+                        />
+                      </Animated.View>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Carbs (g)</Text>
+                      <Animated.View
+                        style={[
+                          styles.inputWrapper,
+                          {
+                            backgroundColor: inputFlash.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [COLORS.darkGreen, 'rgba(0, 150, 136, 0.6)'],
+                            }),
+                          },
+                        ]}
+                      >
+                        <TextInput
+                          style={styles.inputInner}
+                          value={mbTargetCarbs}
+                          onChangeText={setMbTargetCarbs}
+                          keyboardType="numeric"
+                          placeholder="60"
+                          placeholderTextColor={COLORS.lightGray}
+                          returnKeyType="done"
+                        />
+                      </Animated.View>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Fat (g)</Text>
+                      <Animated.View
+                        style={[
+                          styles.inputWrapper,
+                          {
+                            backgroundColor: inputFlash.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [COLORS.darkGreen, 'rgba(0, 150, 136, 0.6)'],
+                            }),
+                          },
+                        ]}
+                      >
+                        <TextInput
+                          style={styles.inputInner}
+                          value={mbTargetFat}
+                          onChangeText={setMbTargetFat}
+                          keyboardType="numeric"
+                          placeholder="15"
+                          placeholderTextColor={COLORS.lightGray}
+                          returnKeyType="done"
+                        />
+                      </Animated.View>
+                    </View>
+
+                    <Text style={styles.smartFillHint}>
+                      Suggested targets based on {getMealsRemaining()} meal{getMealsRemaining() !== 1 ? 's' : ''} remaining today
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => { Keyboard.dismiss(); setMealBuilderStep('build'); }}
+                    activeOpacity={0.6}
+                  >
+                    <Text style={styles.buttonText}>Start Building →</Text>
+                  </TouchableOpacity>
+                </>
+
+              ) : currentView === 'mealBuilder' && mealBuilderStep === 'build' ? (
+                <>
+                  {/* MEAL BUILDER — Step 2: Precision Build */}
+                  <SubViewHeader
+                    title="Meal Builder"
+                    onHome={goHome}
+                    backLabel="← Eat at Home"
+                    onBack={() => { Keyboard.dismiss(); setCurrentView('eatAtHome'); }}
+                  />
+
+                  {/* ── Unit Toggle ── */}
+                  <View style={styles.mbUnitToggleRow}>
+                    <Text style={styles.mbUnitToggleLabel}>Units</Text>
+                    <View style={styles.mbUnitToggle}>
+                      {['g', 'oz'].map(u => (
+                        <TouchableOpacity
+                          key={u}
+                          style={[styles.mbUnitBtn, mbUnit === u && styles.mbUnitBtnActive]}
+                          onPress={() => setMbUnit(u)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.mbUnitBtnText, mbUnit === u && styles.mbUnitBtnTextActive]}>{u}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* ── Hero Dashboard ── */}
+                  <Animated.View style={[
+                    styles.mbDashboard,
+                    {
+                      borderColor: mbPulseAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['rgba(0, 121, 107, 0.35)', '#00c853'],
+                      }),
+                    },
+                  ]}>
+                    <View style={styles.mbDashboardHeader}>
+                      <Text style={styles.mbDashboardTitle}>Meal Progress</Text>
+                      {mbIsTargetHit && (
+                        <View style={styles.mbTargetHitBadge}>
+                          <Text style={styles.mbTargetHitText}>Target Hit!</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Hero macro numbers */}
+                    <View style={styles.mbDashboardRow}>
+                      {[
+                        { label: 'Protein', current: mbCurrentMacros.protein, target: mbTargetProtein },
+                        { label: 'Carbs',   current: mbCurrentMacros.carbs,   target: mbTargetCarbs   },
+                        { label: 'Fat',     current: mbCurrentMacros.fat,     target: mbTargetFat     },
+                      ].map(({ label, current, target }) => {
+                        const tVal = parseFloat(target) || 0;
+                        const isOver = tVal > 0 && current > tVal;
+                        const pctFill = tVal > 0 ? Math.min(1, current / tVal) : 0;
+                        return (
+                          <View key={label} style={styles.mbDashboardItem}>
+                            <Text style={styles.mbDashboardLabel}>{label}</Text>
+                            <Text style={[styles.mbDashboardCurrent, isOver && styles.mbDashboardOver]}>
+                              {Math.round(current)}
+                            </Text>
+                            <Text style={[styles.mbDashboardUnit, isOver && styles.mbDashboardOver]}>g</Text>
+                            <View style={styles.mbMiniBarTrack}>
+                              <View style={[
+                                styles.mbMiniBarFill,
+                                { width: `${pctFill * 100}%` },
+                                isOver && styles.mbMiniBarOver,
+                              ]} />
+                            </View>
+                            <Text style={styles.mbDashboardTarget}>/ {target || '—'}g</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+
+                    {/* Live match ring */}
+                    {mbMatchPct !== null && (
+                      <View style={styles.mbMatchRingRow}>
+                        <MatchRing percentage={mbMatchPct} size={80} />
+                        <Text style={styles.mbMatchLabel}>Live Match to Target</Text>
+                      </View>
+                    )}
+                  </Animated.View>
+
+                  {/* ── Add Custom Food Button ── */}
+                  <TouchableOpacity
+                    style={styles.mbAddCustomFoodBtn}
+                    onPress={() => setShowAddCustomFood(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="add-circle-outline" size={18} color={COLORS.accentGreen} />
+                    <Text style={styles.mbAddCustomFoodBtnText}>Add Custom Food</Text>
+                  </TouchableOpacity>
+
+                  {/* ── Ingredient Sections ── */}
+                  {['Proteins', 'Carbs', 'Fats'].map(category => (
+                    <View key={category} style={styles.mbSection}>
+                      <Text style={styles.mbSectionTitle}>{category}</Text>
+                      <View style={styles.mbIngredientGrid}>
+                        {allStaples.filter(i => i.category === category).map(ingredient => {
+                          const grams = mbIngredients[ingredient.id] || 0;
+                          const isActive = mbActiveIngredient === ingredient.id;
+                          const isSelected = grams > 0;
+                          const contrib = {
+                            protein: Math.round(ingredient.macrosPer100g.protein * grams / 100 * 10) / 10,
+                            carbs:   Math.round(ingredient.macrosPer100g.carbs   * grams / 100 * 10) / 10,
+                            fat:     Math.round(ingredient.macrosPer100g.fat     * grams / 100 * 10) / 10,
+                          };
+                          // Per-unit reference for the inactive state
+                          const perUnitRef = mbUnit === 'oz'
+                            ? `per oz: ${(ingredient.macrosPer100g.protein * 28.35 / 100).toFixed(1)}P`
+                            : `per 100g: ${ingredient.macrosPer100g.protein}P`;
+                          // Display value for the active stepper
+                          const displayVal = isActive ? mbEditingText
+                            : mbUnit === 'oz' ? (grams / 28.35).toFixed(1) : grams.toString();
+                          const unitLabel = mbUnit === 'oz' ? 'oz' : 'g';
+                          const step = mbUnit === 'oz' ? Math.round(0.5 * 28.35) : 25;
+
+                          return (
+                            <TouchableOpacity
+                              key={ingredient.id}
+                              style={[
+                                styles.mbIngredientSquare,
+                                isSelected && styles.mbIngredientSquareSelected,
+                                isActive   && styles.mbIngredientSquareActive,
+                              ]}
+                              onPress={() => {
+                                if (isActive) {
+                                  // Collapse — commit the edit
+                                  const numVal = parseFloat(mbEditingText) || 0;
+                                  const g = mbUnit === 'oz' ? Math.round(numVal * 28.35) : Math.round(numVal);
+                                  const clamped = Math.max(0, Math.min(500, g));
+                                  setMbIngredients(prev => ({ ...prev, [ingredient.id]: clamped }));
+                                  setMbActiveIngredient(null);
+                                } else {
+                                  const initGrams = grams || 100;
+                                  if (!grams) setMbIngredients(prev => ({ ...prev, [ingredient.id]: initGrams }));
+                                  setMbActiveIngredient(ingredient.id);
+                                  setMbEditingText(
+                                    mbUnit === 'oz'
+                                      ? (initGrams / 28.35).toFixed(1)
+                                      : initGrams.toString()
+                                  );
+                                }
+                              }}
+                              activeOpacity={0.75}
+                            >
+                              <Text style={styles.mbIngredientName} numberOfLines={2}>{ingredient.name}</Text>
+                              {ingredient.subtitle && (
+                                <Text style={styles.mbIngredientSub}>{ingredient.subtitle}</Text>
+                              )}
+
+                              {isActive ? (
+                                <View style={styles.mbStepper}>
+                                  <TouchableOpacity
+                                    style={[styles.mbStepperBtn, grams <= 0 && styles.mbStepperBtnDisabled]}
+                                    onPress={() => {
+                                      const next = Math.max(0, grams - step);
+                                      setMbIngredients(prev => ({ ...prev, [ingredient.id]: next }));
+                                      setMbEditingText(mbUnit === 'oz' ? (next / 28.35).toFixed(1) : next.toString());
+                                      if (next === 0) setMbActiveIngredient(null);
+                                    }}
+                                    disabled={grams <= 0}
+                                    activeOpacity={0.6}
+                                  >
+                                    <Text style={styles.mbStepperBtnText}>-</Text>
+                                  </TouchableOpacity>
+
+                                  <View style={styles.mbStepperInputWrap}>
+                                    <TextInput
+                                      style={styles.mbStepperInput}
+                                      value={mbEditingText}
+                                      onChangeText={(text) => {
+                                        setMbEditingText(text);
+                                        const numVal = parseFloat(text) || 0;
+                                        const g = mbUnit === 'oz'
+                                          ? Math.round(numVal * 28.35)
+                                          : Math.round(numVal);
+                                        setMbIngredients(prev => ({
+                                          ...prev,
+                                          [ingredient.id]: Math.max(0, Math.min(500, g)),
+                                        }));
+                                      }}
+                                      onBlur={() => {
+                                        const numVal = parseFloat(mbEditingText) || 0;
+                                        const g = mbUnit === 'oz'
+                                          ? Math.round(numVal * 28.35)
+                                          : Math.round(numVal);
+                                        const clamped = Math.max(0, Math.min(500, g));
+                                        setMbIngredients(prev => ({ ...prev, [ingredient.id]: clamped }));
+                                        setMbEditingText(
+                                          mbUnit === 'oz'
+                                            ? (clamped / 28.35).toFixed(1)
+                                            : clamped.toString()
+                                        );
+                                        if (clamped === 0) setMbActiveIngredient(null);
+                                      }}
+                                      onSubmitEditing={() => Keyboard.dismiss()}
+                                      keyboardType="decimal-pad"
+                                      returnKeyType="done"
+                                      selectTextOnFocus
+                                    />
+                                    <Text style={styles.mbStepperUnit}>{unitLabel}</Text>
+                                  </View>
+
+                                  <TouchableOpacity
+                                    style={[styles.mbStepperBtn, grams >= 500 && styles.mbStepperBtnDisabled]}
+                                    onPress={() => {
+                                      const next = Math.min(500, grams + step);
+                                      setMbIngredients(prev => ({ ...prev, [ingredient.id]: next }));
+                                      setMbEditingText(mbUnit === 'oz' ? (next / 28.35).toFixed(1) : next.toString());
+                                    }}
+                                    disabled={grams >= 500}
+                                    activeOpacity={0.6}
+                                  >
+                                    <Text style={styles.mbStepperBtnText}>+</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              ) : (
+                                <View style={styles.mbMacroPreview}>
+                                  {isSelected ? (
+                                    <Text style={styles.mbMacroContrib}>
+                                      {contrib.protein}P · {contrib.carbs}C · {contrib.fat}F
+                                    </Text>
+                                  ) : (
+                                    <Text style={styles.mbMacroBase}>{perUnitRef}</Text>
+                                  )}
+                                </View>
+                              )}
+
+                              {isSelected && !isActive && (
+                                <Text style={styles.mbGramsLabel}>
+                                  {mbUnit === 'oz'
+                                    ? `${(grams / 28.35).toFixed(1)} oz`
+                                    : `${grams}g`}
+                                </Text>
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ))}
+
+                  {/* ── Recipe Suggestion Badge ── */}
+                  {mbSuggestion && (
+                    <TouchableOpacity
+                      style={styles.mbSuggestionBadge}
+                      onPress={() => {
+                        const recipe = RECIPES.find(r => r.name === mbSuggestion.recipe.name);
+                        if (recipe) {
+                          setSelectedRecipe({
+                            name: recipe.name,
+                            isRecipe: true,
+                            servingMultiplier: 1,
+                            recipeDetails: { ingredients: recipe.ingredients, prepTime: recipe.prepTime, steps: recipe.steps },
+                          });
+                          setShowRecipeDetail(true);
+                        }
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={styles.mbSuggestionIcon}>💡</Text>
+                      <View style={styles.mbSuggestionInfo}>
+                        <Text style={styles.mbSuggestionLabel}>Your build resembles</Text>
+                        <Text style={styles.mbSuggestionName}>{mbSuggestion.recipe.name}</Text>
+                        <Text style={styles.mbSuggestionHint}>Tap for cooking instructions</Text>
+                      </View>
+                      <Text style={styles.mbSuggestionScore}>{mbSuggestion.score}%</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* ── Finalize Button ── */}
+                  <TouchableOpacity
+                    style={[
+                      styles.button,
+                      styles.mbFinalizeBtn,
+                      Object.values(mbIngredients).every(g => !g) && styles.mbFinalizeBtnDisabled,
+                    ]}
+                    onPress={() => {
+                      if (Object.values(mbIngredients).every(g => !g)) return;
+                      Keyboard.dismiss();
+                      setShowMealBuilderFinalize(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.buttonText}>Finalize Meal</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.resetButton} onPress={goHome} activeOpacity={0.6}>
+                    <Text style={styles.resetButtonText}>Back to Home</Text>
+                  </TouchableOpacity>
+                </>
+
+              ) : currentView === 'eatAtHome' ? (
+                <>
+                  {/* EAT AT HOME HUB */}
+                  <SubViewHeader title="Eat at Home" onHome={goHome} />
+
+                  {renderFuelGauge()}
+
+                  <View style={styles.inputContainer}>
+                    <View style={styles.inputHeaderRow}>
+                      <Text style={styles.inputSectionLabel}>Target Macros</Text>
+                      <TouchableOpacity
+                        style={styles.smartFillButton}
+                        onPress={handleSmartFill}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.smartFillButtonText}>Smart Split</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Protein (g)</Text>
+                      <Animated.View
+                        style={[
+                          styles.inputWrapper,
+                          {
+                            backgroundColor: inputFlash.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [COLORS.darkGreen, 'rgba(0, 150, 136, 0.6)'],
+                            }),
+                          },
+                        ]}
+                      >
+                        <TextInput
+                          style={styles.inputInner}
+                          value={searchProtein}
+                          onChangeText={setSearchProtein}
+                          keyboardType="numeric"
+                          placeholder="0"
+                          placeholderTextColor={COLORS.lightGray}
+                          returnKeyType="done"
+                        />
+                      </Animated.View>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Carbs (g)</Text>
+                      <Animated.View
+                        style={[
+                          styles.inputWrapper,
+                          {
+                            backgroundColor: inputFlash.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [COLORS.darkGreen, 'rgba(0, 150, 136, 0.6)'],
+                            }),
+                          },
+                        ]}
+                      >
+                        <TextInput
+                          style={styles.inputInner}
+                          value={searchCarbs}
+                          onChangeText={setSearchCarbs}
+                          keyboardType="numeric"
+                          placeholder="0"
+                          placeholderTextColor={COLORS.lightGray}
+                          returnKeyType="done"
+                        />
+                      </Animated.View>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Fat (g)</Text>
+                      <Animated.View
+                        style={[
+                          styles.inputWrapper,
+                          {
+                            backgroundColor: inputFlash.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [COLORS.darkGreen, 'rgba(0, 150, 136, 0.6)'],
+                            }),
+                          },
+                        ]}
+                      >
+                        <TextInput
+                          style={styles.inputInner}
+                          value={searchFat}
+                          onChangeText={setSearchFat}
+                          keyboardType="numeric"
+                          placeholder="0"
+                          placeholderTextColor={COLORS.lightGray}
+                          returnKeyType="done"
+                        />
+                      </Animated.View>
+                    </View>
+
+                    <Text style={styles.smartFillHint}>
+                      Suggested targets based on {getMealsRemaining()} meal{getMealsRemaining() !== 1 ? 's' : ''} remaining today
+                    </Text>
+                  </View>
+
+                  {/* Two large CTA buttons */}
+                  <View style={styles.eatAtHomeActions}>
+                    <TouchableOpacity
+                      style={styles.eatAtHomePrimaryBtn}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setCookRecipeStep('filter');
+                        setCurrentView('cookRecipe');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="restaurant-outline" size={22} color={COLORS.white} />
+                      <Text style={styles.eatAtHomePrimaryBtnText}>Find a Recipe</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.eatAtHomeSecondaryBtn}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setMbTargetProtein(searchProtein);
+                        setMbTargetCarbs(searchCarbs);
+                        setMbTargetFat(searchFat);
+                        setMealBuilderStep('build');
+                        setMbIngredients({});
+                        setMbActiveIngredient(null);
+                        setMbUnit('g');
+                        setMbEditingText('');
+                        setMealBuilderMealName('');
+                        setShowMealBuilderFinalize(false);
+                        mbWasHitRef.current = false;
+                        mbPulseAnim.setValue(0);
+                        setCurrentView('mealBuilder');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="layers-outline" size={22} color={COLORS.accentGreen} />
+                      <Text style={styles.eatAtHomeSecondaryBtnText}>Manual Meal Builder</Text>
+                    </TouchableOpacity>
+                  </View>
                 </>
 
               ) : (
@@ -2043,9 +2800,284 @@ export default function App() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+      {/* Meal Builder — Add Custom Food Modal */}
+      <Modal
+        visible={showAddCustomFood}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowAddCustomFood(false)}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={addFoodStyles.overlay}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={addFoodStyles.keyboardAvoid}
+            >
+              <View style={addFoodStyles.card}>
+                <Text style={addFoodStyles.title}>Add Custom Food</Text>
+                <Text style={addFoodStyles.subtitle}>Macros per 100g (or per serving)</Text>
+
+                <Text style={addFoodStyles.label}>Food Name</Text>
+                <TextInput
+                  style={addFoodStyles.input}
+                  value={customFoodName}
+                  onChangeText={setCustomFoodName}
+                  placeholder="e.g. Greek Yogurt"
+                  placeholderTextColor={COLORS.muted}
+                  returnKeyType="next"
+                  autoFocus
+                />
+
+                <View style={addFoodStyles.macroRow}>
+                  <View style={addFoodStyles.macroField}>
+                    <Text style={addFoodStyles.label}>Protein (g)</Text>
+                    <TextInput
+                      style={addFoodStyles.macroInput}
+                      value={customFoodProtein}
+                      onChangeText={setCustomFoodProtein}
+                      placeholder="0"
+                      placeholderTextColor={COLORS.muted}
+                      keyboardType="decimal-pad"
+                      returnKeyType="next"
+                    />
+                  </View>
+                  <View style={addFoodStyles.macroField}>
+                    <Text style={addFoodStyles.label}>Carbs (g)</Text>
+                    <TextInput
+                      style={addFoodStyles.macroInput}
+                      value={customFoodCarbs}
+                      onChangeText={setCustomFoodCarbs}
+                      placeholder="0"
+                      placeholderTextColor={COLORS.muted}
+                      keyboardType="decimal-pad"
+                      returnKeyType="next"
+                    />
+                  </View>
+                  <View style={addFoodStyles.macroField}>
+                    <Text style={addFoodStyles.label}>Fat (g)</Text>
+                    <TextInput
+                      style={addFoodStyles.macroInput}
+                      value={customFoodFat}
+                      onChangeText={setCustomFoodFat}
+                      placeholder="0"
+                      placeholderTextColor={COLORS.muted}
+                      keyboardType="decimal-pad"
+                      returnKeyType="done"
+                      onSubmitEditing={handleAddCustomFood}
+                    />
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={addFoodStyles.saveBtn}
+                  onPress={handleAddCustomFood}
+                  activeOpacity={0.7}
+                >
+                  <Text style={addFoodStyles.saveBtnText}>Add to Staples</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={addFoodStyles.cancelBtn}
+                  onPress={() => setShowAddCustomFood(false)}
+                  activeOpacity={0.6}
+                >
+                  <Text style={addFoodStyles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </KeyboardAvoidingView>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Meal Builder — Finalize Modal */}
+      <Modal
+        visible={showMealBuilderFinalize}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowMealBuilderFinalize(false)}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={mbFinalizeStyles.overlay}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={mbFinalizeStyles.keyboardAvoid}
+            >
+              <View style={mbFinalizeStyles.card}>
+                <Text style={mbFinalizeStyles.title}>Name This Meal</Text>
+                <Text style={mbFinalizeStyles.subtitle}>
+                  {Math.round(mbCurrentMacros.protein)}P · {Math.round(mbCurrentMacros.carbs)}C · {Math.round(mbCurrentMacros.fat)}F
+                </Text>
+                <TextInput
+                  style={mbFinalizeStyles.input}
+                  value={mealBuilderMealName}
+                  onChangeText={setMealBuilderMealName}
+                  placeholder="e.g. Post-Gym Bowl"
+                  placeholderTextColor={COLORS.muted}
+                  returnKeyType="done"
+                  onSubmitEditing={handleMealBuilderFinalize}
+                  autoFocus
+                />
+                <TouchableOpacity style={mbFinalizeStyles.saveBtn} onPress={handleMealBuilderFinalize} activeOpacity={0.7}>
+                  <Text style={mbFinalizeStyles.saveBtnText}>Save & Log Meal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={mbFinalizeStyles.cancelBtn} onPress={() => setShowMealBuilderFinalize(false)} activeOpacity={0.6}>
+                  <Text style={mbFinalizeStyles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </KeyboardAvoidingView>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
     </SafeAreaView>
   );
 }
+
+const mbFinalizeStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 26, 26, 0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  keyboardAvoid: {
+    width: '100%',
+    maxWidth: 320,
+  },
+  card: {
+    backgroundColor: COLORS.darkGreen,
+    borderRadius: 16,
+    padding: 24,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: COLORS.accentGreen,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  input: {
+    backgroundColor: COLORS.darkBlue,
+    borderRadius: 8,
+    padding: 14,
+    fontSize: 16,
+    color: COLORS.white,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  saveBtn: {
+    backgroundColor: COLORS.accentGreen,
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  saveBtnText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    color: COLORS.muted,
+    fontSize: 14,
+  },
+});
+
+const addFoodStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 26, 26, 0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  keyboardAvoid: {
+    width: '100%',
+    maxWidth: 340,
+  },
+  card: {
+    backgroundColor: COLORS.darkGreen,
+    borderRadius: 16,
+    padding: 24,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: COLORS.muted,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 11,
+    color: COLORS.accentGreen,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: COLORS.darkBlue,
+    borderRadius: 8,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    color: COLORS.white,
+    marginBottom: 16,
+  },
+  macroRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
+  },
+  macroField: {
+    flex: 1,
+  },
+  macroInput: {
+    backgroundColor: COLORS.darkBlue,
+    borderRadius: 8,
+    paddingVertical: 13,
+    paddingHorizontal: 10,
+    fontSize: 15,
+    color: COLORS.white,
+    textAlign: 'center',
+  },
+  saveBtn: {
+    backgroundColor: COLORS.accentGreen,
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  saveBtnText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  cancelBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    color: COLORS.muted,
+    fontSize: 14,
+  },
+});
 
 const recipeModalStyles = StyleSheet.create({
   safeArea: {
@@ -2301,8 +3333,10 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: COLORS.darkGreen,
     paddingVertical: 16,
+    paddingHorizontal: 28,
     borderRadius: 8,
-    width: 220,
+    minWidth: 200,
+    alignSelf: 'center',
     alignItems: 'center',
   },
   buttonText: {
@@ -2561,7 +3595,7 @@ const styles = StyleSheet.create({
   },
   historyDate: {
     fontSize: 11,
-    color: 'rgba(138,138,138,0.6)',
+    color: 'rgba(160,160,160,0.7)',
   },
   scanButton: {
     marginTop: 12,
@@ -2569,8 +3603,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.accentGreen,
     paddingVertical: 14,
+    paddingHorizontal: 28,
     borderRadius: 8,
-    width: 220,
+    minWidth: 200,
+    alignSelf: 'center',
     alignItems: 'center',
   },
   scanButtonText: {
@@ -2741,7 +3777,7 @@ const styles = StyleSheet.create({
   fuelGaugeValue: {
     fontSize: 14,
     color: COLORS.white,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   fuelGaugeValueNegative: {
     color: '#dc143c',
@@ -2866,36 +3902,74 @@ const styles = StyleSheet.create({
     color: '#ff6b6b',
     fontWeight: '600',
   },
-  // Intent Grid Styles
-  intentGrid: {
+  // Home 2×2 Grid
+  homeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
     width: '100%',
-    maxWidth: 320,
     marginBottom: 30,
   },
-  intentButton: {
+  homeCard: {
     width: '47%',
-    aspectRatio: 1.3,
-    borderRadius: 12,
+    aspectRatio: 1,
+    borderRadius: 14,
     backgroundColor: COLORS.darkGreen,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255,255,255,0.1)',
+    padding: 12,
+    gap: 6,
   },
-  intentButtonText: {
-    fontSize: 15,
+  homeCardLabel: {
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.white,
     textAlign: 'center',
-    marginBottom: 4,
   },
-  intentButtonSub: {
-    fontSize: 11,
+  homeCardSub: {
+    fontSize: 10,
     color: COLORS.muted,
     textAlign: 'center',
+  },
+  // Eat at Home CTA buttons
+  eatAtHomeActions: {
+    width: '100%',
+    gap: 12,
+    marginTop: 8,
+  },
+  eatAtHomePrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: COLORS.accentGreen,
+    paddingVertical: 18,
+    borderRadius: 12,
+    width: '100%',
+  },
+  eatAtHomePrimaryBtnText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.white,
+  },
+  eatAtHomeSecondaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: 'transparent',
+    paddingVertical: 16,
+    borderRadius: 12,
+    width: '100%',
+    borderWidth: 1.5,
+    borderColor: COLORS.accentGreen,
+  },
+  eatAtHomeSecondaryBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.accentGreen,
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -3002,6 +4076,357 @@ const styles = StyleSheet.create({
     color: COLORS.accentGreen,
     fontWeight: '700',
   },
+  // ─── Meal Builder styles ──────────────────────────────────────────────────────
+  mbHeading: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 30,
+  },
+  mbSubheading: {
+    fontSize: 13,
+    color: COLORS.muted,
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  // Unit toggle
+  mbUnitToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    width: '100%',
+    maxWidth: 320,
+    marginBottom: 12,
+    gap: 10,
+  },
+  mbUnitToggleLabel: {
+    fontSize: 11,
+    color: COLORS.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  mbUnitToggle: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
+  },
+  mbUnitBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  mbUnitBtnActive: {
+    backgroundColor: COLORS.accentGreen,
+  },
+  mbUnitBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.muted,
+  },
+  mbUnitBtnTextActive: {
+    color: COLORS.white,
+  },
+  // Hero Dashboard
+  mbDashboard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: 'rgba(0, 77, 77, 0.45)',
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 24,
+    borderWidth: 1.5,
+  },
+  mbDashboardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  mbDashboardTitle: {
+    fontSize: 10,
+    color: COLORS.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    fontWeight: '600',
+  },
+  mbTargetHitBadge: {
+    backgroundColor: 'rgba(0, 200, 83, 0.15)',
+    borderRadius: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#00c853',
+  },
+  mbTargetHitText: {
+    fontSize: 11,
+    color: '#00c853',
+    fontWeight: '700',
+  },
+  mbDashboardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 4,
+  },
+  mbDashboardItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  mbDashboardLabel: {
+    fontSize: 10,
+    color: COLORS.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  mbDashboardCurrent: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: COLORS.white,
+    lineHeight: 40,
+  },
+  mbDashboardUnit: {
+    fontSize: 13,
+    color: COLORS.muted,
+    fontWeight: '500',
+    marginTop: -4,
+  },
+  mbMiniBarTrack: {
+    width: '80%',
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginVertical: 5,
+  },
+  mbMiniBarFill: {
+    height: '100%',
+    backgroundColor: COLORS.accentGreen,
+    borderRadius: 2,
+  },
+  mbMiniBarOver: {
+    backgroundColor: '#dc143c',
+  },
+  mbDashboardOver: {
+    color: '#dc143c',
+  },
+  mbDashboardTarget: {
+    fontSize: 11,
+    color: COLORS.muted,
+  },
+  mbMatchRingRow: {
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+  },
+  mbMatchLabel: {
+    fontSize: 10,
+    color: COLORS.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginTop: -6,
+  },
+  // Add Custom Food button
+  mbAddCustomFoodBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 121, 107, 0.45)',
+    backgroundColor: 'rgba(0, 121, 107, 0.08)',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  mbAddCustomFoodBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.accentGreen,
+  },
+  // Ingredient sections
+  mbSection: {
+    width: '100%',
+    maxWidth: 320,
+    marginBottom: 20,
+  },
+  mbSectionTitle: {
+    fontSize: 10,
+    color: COLORS.accentGreen,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  mbIngredientGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  mbIngredientSquare: {
+    width: '47.5%',
+    minHeight: 90,
+    backgroundColor: 'rgba(0, 77, 77, 0.3)',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  mbIngredientSquareSelected: {
+    borderColor: 'rgba(0, 121, 107, 0.6)',
+    backgroundColor: 'rgba(0, 77, 77, 0.5)',
+  },
+  mbIngredientSquareActive: {
+    borderColor: COLORS.accentGreen,
+    backgroundColor: 'rgba(0, 121, 107, 0.2)',
+  },
+  mbIngredientName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.white,
+    lineHeight: 18,
+    marginBottom: 2,
+  },
+  mbIngredientSub: {
+    fontSize: 10,
+    color: COLORS.muted,
+    marginBottom: 4,
+    fontStyle: 'italic',
+  },
+  mbMacroPreview: {
+    marginTop: 6,
+  },
+  mbMacroContrib: {
+    fontSize: 11,
+    color: COLORS.accentGreen,
+    fontWeight: '600',
+  },
+  mbMacroBase: {
+    fontSize: 10,
+    color: COLORS.muted,
+  },
+  mbGramsLabel: {
+    fontSize: 11,
+    color: COLORS.accentGreen,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  // Precision stepper with TextInput
+  mbStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+  },
+  mbStepperBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0, 121, 107, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 121, 107, 0.6)',
+  },
+  mbStepperBtnDisabled: {
+    opacity: 0.3,
+  },
+  mbStepperBtnText: {
+    fontSize: 18,
+    color: COLORS.white,
+    fontWeight: '600',
+    lineHeight: 22,
+  },
+  mbStepperInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.darkBlue,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    minWidth: 56,
+    justifyContent: 'center',
+  },
+  mbStepperInput: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.white,
+    minWidth: 32,
+    textAlign: 'right',
+    padding: 0,
+  },
+  mbStepperUnit: {
+    fontSize: 11,
+    color: COLORS.muted,
+    marginLeft: 2,
+    fontWeight: '500',
+  },
+  // Suggestion badge
+  mbSuggestionBadge: {
+    width: '100%',
+    maxWidth: 320,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(149, 76, 233, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(149, 76, 233, 0.4)',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+    gap: 10,
+  },
+  mbSuggestionIcon: {
+    fontSize: 20,
+  },
+  mbSuggestionInfo: {
+    flex: 1,
+  },
+  mbSuggestionLabel: {
+    fontSize: 10,
+    color: COLORS.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  mbSuggestionName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#c084fc',
+    marginBottom: 2,
+  },
+  mbSuggestionHint: {
+    fontSize: 11,
+    color: COLORS.muted,
+    fontStyle: 'italic',
+  },
+  mbSuggestionScore: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#c084fc',
+  },
+  // Finalize button
+  mbFinalizeBtn: {
+    marginTop: 8,
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: COLORS.accentGreen,
+  },
+  mbFinalizeBtnDisabled: {
+    opacity: 0.35,
+  },
+  // ──────────────────────────────────────────────────────────────────────────────
   // Step progress indicator
   stepIndicatorContainer: {
     alignItems: 'center',
