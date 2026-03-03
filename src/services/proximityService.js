@@ -1,8 +1,11 @@
 import * as Location from 'expo-location';
 import { Linking, Platform } from 'react-native';
+import { GOOGLE_PLACES_API_KEY } from '../config';
 
 // Consultant's Radius: 10 miles max search distance
 const MAX_SEARCH_RADIUS_MILES = 10;
+
+const PLACES_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
 
 // Mock restaurant locations (in production, replace with Google Places API)
 const RESTAURANT_CHAINS = {
@@ -149,50 +152,102 @@ function generateMockLocation(userLat, userLon, restaurantName) {
 }
 
 /**
- * Find nearest restaurant of given chain
- * @param {string} restaurantName - Name of the restaurant chain
+ * Find up to `maxResults` nearby storefronts for a restaurant chain.
+ *
+ * When GOOGLE_PLACES_API_KEY is set: uses rankby=distance (no radius) so the
+ * API returns every location sorted by true proximity — popular chains like
+ * Wingstop will never be filtered out by a radius cap.  Multiple storefronts
+ * of the same brand are all returned so users see each unique location on the map.
+ *
+ * Falls back to a single mock location when no key is configured.
+ *
+ * @param {string} restaurantName
  * @param {{latitude: number, longitude: number}} userLocation
- * @returns {Promise<object | null>} Nearest location info
+ * @param {number} maxResults - Maximum storefronts to return (default 3)
+ * @returns {Promise<object[]>} Array of location objects (may be empty)
  */
-export async function findNearestRestaurant(restaurantName, userLocation) {
-  if (!userLocation) return null;
+export async function findNearbyRestaurants(restaurantName, userLocation, maxResults = 3) {
+  if (!userLocation) return [];
 
-  // In production, replace with actual Google Places API call:
-  // const response = await fetch(
-  //   `https://maps.googleapis.com/maps/api/place/nearbysearch/json?` +
-  //   `location=${userLocation.latitude},${userLocation.longitude}` +
-  //   `&radius=8000&keyword=${encodeURIComponent(restaurantName)}` +
-  //   `&key=${GOOGLE_PLACES_API_KEY}`
-  // );
-  // const data = await response.json();
-  // return data.results[0];
+  if (GOOGLE_PLACES_API_KEY) {
+    try {
+      const { latitude, longitude } = userLocation;
+      const url =
+        `${PLACES_URL}` +
+        `?location=${latitude},${longitude}` +
+        `&rankby=distance` +
+        `&keyword=${encodeURIComponent(restaurantName)}` +
+        `&key=${GOOGLE_PLACES_API_KEY}`;
 
-  // For now, use mock data
-  return generateMockLocation(
-    userLocation.latitude,
-    userLocation.longitude,
-    restaurantName
-  );
-}
+      const response = await fetch(url);
+      const data = await response.json();
 
-/**
- * Find all nearby restaurants for supported chains
- * @param {{latitude: number, longitude: number}} userLocation
- * @returns {Promise<Map<string, object>>} Map of restaurant name to location info
- */
-export async function findAllNearbyRestaurants(userLocation) {
-  if (!userLocation) return new Map();
-
-  const results = new Map();
-
-  for (const restaurantName of Object.keys(RESTAURANT_CHAINS)) {
-    const location = await findNearestRestaurant(restaurantName, userLocation);
-    if (location) {
-      results.set(restaurantName, location);
+      if (data.results && data.results.length > 0) {
+        return data.results.slice(0, maxResults).map((place) => {
+          const lat = place.geometry.location.lat;
+          const lng = place.geometry.location.lng;
+          const distance = calculateDistance(latitude, longitude, lat, lng);
+          return {
+            name: restaurantName,
+            latitude: lat,
+            longitude: lng,
+            address: place.vicinity || '',
+            distance,
+            withinRadius: distance <= MAX_SEARCH_RADIUS_MILES,
+            placeId: place.place_id,
+            isMock: false,
+          };
+        });
+      }
+      return [];
+    } catch (error) {
+      console.error('[ProximityService] Places API error:', error);
+      // Fall through to mock on network failure
     }
   }
 
-  return results;
+  // No API key — single mock location per brand
+  return [generateMockLocation(userLocation.latitude, userLocation.longitude, restaurantName)];
+}
+
+/**
+ * Legacy single-result wrapper kept for backward compatibility.
+ * Returns the nearest location for a chain, or null if none found.
+ */
+export async function findNearestRestaurant(restaurantName, userLocation) {
+  const results = await findNearbyRestaurants(restaurantName, userLocation, 1);
+  return results[0] ?? null;
+}
+
+/**
+ * Find all nearby restaurants for all supported chains.
+ *
+ * Returns two structures:
+ *  - `nearest`: Map<name, singleLocation> — used by the scoring engine to get
+ *    the closest storefront distance per brand.
+ *  - `all`: Array<{name, loc}> — flat list of every storefront found; used by
+ *    the map to render a separate marker for each unique location.
+ *
+ * @param {{latitude: number, longitude: number}} userLocation
+ * @returns {Promise<{ nearest: Map<string, object>, all: Array<{name: string, loc: object}> }>}
+ */
+export async function findAllNearbyRestaurants(userLocation) {
+  if (!userLocation) return { nearest: new Map(), all: [] };
+
+  const nearest = new Map();
+  const all = [];
+
+  for (const restaurantName of Object.keys(RESTAURANT_CHAINS)) {
+    const locations = await findNearbyRestaurants(restaurantName, userLocation);
+    if (locations.length > 0) {
+      nearest.set(restaurantName, locations[0]); // nearest per brand for scoring
+      for (const loc of locations) {
+        all.push({ name: restaurantName, loc });
+      }
+    }
+  }
+
+  return { nearest, all };
 }
 
 /**
