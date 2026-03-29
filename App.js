@@ -473,14 +473,12 @@ export default function App() {
   const [nearbyRestaurants, setNearbyRestaurants] = useState(new Map()); // nearest per brand — for scoring
   const [allNearbyLocations, setAllNearbyLocations] = useState([]); // all storefronts — for map markers
   const [locationLoading, setLocationLoading] = useState(false);
-  const [eatOutStep, setEatOutStep] = useState('briefing'); // 'briefing' | 'map' | 'detail'
+  const [eatOutStep, setEatOutStep] = useState('briefing'); // 'briefing' | 'feed' | 'detail'
   const [eatOutTargetProtein, setEatOutTargetProtein] = useState('');
   const [eatOutTargetCarbs, setEatOutTargetCarbs] = useState('');
   const [eatOutTargetFat, setEatOutTargetFat] = useState('');
   const [eatOutSelectedRestaurant, setEatOutSelectedRestaurant] = useState(null);
-  const [eatOutProteinPick, setEatOutProteinPick] = useState(null);      // radio — single protein
-  const [eatOutBaseSelections, setEatOutBaseSelections] = useState({});   // checkbox — bases
-  const [eatOutAddonSelections, setEatOutAddonSelections] = useState({}); // checkbox — add-ons
+  const [eoItemQty, setEoItemQty] = useState({});  // { [itemName]: servings } — 0/absent = not selected
   const [eoMenuData, setEoMenuData] = useState(null);   // RestaurantMenuItem[] | null
   const [eoMenuLoading, setEoMenuLoading] = useState(false);
   const eoDetailPulseAnim = useRef(new Animated.Value(0)).current;
@@ -884,9 +882,7 @@ export default function App() {
     if (view === 'eatOut') {
       setEatOutStep('briefing');
       setEatOutSelectedRestaurant(null);
-      setEatOutProteinPick(null);
-      setEatOutBaseSelections({});
-      setEatOutAddonSelections({});
+      setEoItemQty({});
       eoDetailWasHitRef.current = false;
       eoDetailPulseAnim.setValue(0);
       const mealsLeft = getMealsRemaining();
@@ -1127,9 +1123,7 @@ export default function App() {
 
   const openRestaurantDetail = (restaurantName) => {
     setEatOutSelectedRestaurant(restaurantName);
-    setEatOutProteinPick(null);
-    setEatOutBaseSelections({});
-    setEatOutAddonSelections({});
+    setEoItemQty({});
     eoDetailWasHitRef.current = false;
     eoDetailPulseAnim.setValue(0);
     setEatOutStep('detail');
@@ -1205,36 +1199,30 @@ export default function App() {
   const eoDetailTotals = useMemo(() => {
     if (!eoDetailMenu) return { protein: 0, carbs: 0, fat: 0 };
     let p = 0, c = 0, f = 0;
-    if (eatOutProteinPick) {
-      const item = eoDetailMenu.proteins.find((i) => i.name === eatOutProteinPick);
-      if (item) { p += item.macros.protein; c += item.macros.carbs; f += item.macros.fat; }
+    const allItems = [...eoDetailMenu.proteins, ...eoDetailMenu.bases, ...eoDetailMenu.addons];
+    for (const item of allItems) {
+      const qty = eoItemQty[item.name] || 0;
+      if (qty > 0) {
+        p += item.macros.protein * qty;
+        c += item.macros.carbs   * qty;
+        f += item.macros.fat     * qty;
+      }
     }
-    Object.entries(eatOutBaseSelections).forEach(([name, checked]) => {
-      if (checked) {
-        const item = eoDetailMenu.bases.find((i) => i.name === name);
-        if (item) { p += item.macros.protein; c += item.macros.carbs; f += item.macros.fat; }
-      }
-    });
-    Object.entries(eatOutAddonSelections).forEach(([name, checked]) => {
-      if (checked) {
-        const item = eoDetailMenu.addons.find((i) => i.name === name);
-        if (item) { p += item.macros.protein; c += item.macros.carbs; f += item.macros.fat; }
-      }
-    });
-    return { protein: p, carbs: c, fat: f };
-  }, [eoDetailMenu, eatOutProteinPick, eatOutBaseSelections, eatOutAddonSelections]);
+    return { protein: Math.round(p), carbs: Math.round(c), fat: Math.round(f) };
+  }, [eoDetailMenu, eoItemQty]);
 
   const eoDetailMatchPct = useMemo(() => {
     const tP = parseFloat(eatOutTargetProtein) || 0;
     const tC = parseFloat(eatOutTargetCarbs)   || 0;
     const tF = parseFloat(eatOutTargetFat)     || 0;
     if (tP === 0 && tC === 0 && tF === 0) return 0;
-    if (!eatOutProteinPick) return 0;
+    const hasAny = Object.values(eoItemQty).some((q) => q > 0);
+    if (!hasAny) return 0;
     return Math.min(100, Math.round(calculateMatchPercentage(
       { protein: tP, carbs: tC, fat: tF },
       eoDetailTotals,
     )));
-  }, [eoDetailTotals, eatOutTargetProtein, eatOutTargetCarbs, eatOutTargetFat, eatOutProteinPick]);
+  }, [eoDetailTotals, eatOutTargetProtein, eatOutTargetCarbs, eatOutTargetFat, eoItemQty]);
 
   // ── Load restaurant menu via data engine when entering the detail step ──────
   useEffect(() => {
@@ -1966,66 +1954,84 @@ export default function App() {
   // Today's home-screen meal list (thin wrapper)
   const renderDailyActivity = () => renderMealList(dailyActivity, undoDeduction);
 
-  // ─── Eat Out: Map Scout (step 2) ──────────────────────────────────────────
-  const renderEatOutMap = () => {
-    const mapTargets = {
+  // ─── Eat Out: Restaurant Feed (step 2) ────────────────────────────────────
+  const renderEatOutFeed = () => {
+    const feedTargets = {
       protein: parseFloat(eatOutTargetProtein) || 0,
       carbs:   parseFloat(eatOutTargetCarbs)   || 0,
       fat:     parseFloat(eatOutTargetFat)     || 0,
     };
 
-    // Compute best-match % for each nearby restaurant vs entered targets
-    const itemsByRestaurant = {};
-    for (const item of ALL_ITEMS) {
-      if (!itemsByRestaurant[item.restaurant]) itemsByRestaurant[item.restaurant] = [];
-      itemsByRestaurant[item.restaurant].push(item);
-    }
-    // Compute bestPct once per brand (cached), then build a marker for every
-    // individual storefront in allNearbyLocations (multiple per brand allowed).
-    const bestPctByBrand = {};
-    const markerData = [];
-    for (const { name, loc } of allNearbyLocations) {
-      if (!(name in bestPctByBrand)) {
-        const dbItems = RESTAURANT_DB[name] || [];
-        const allItems = dbItems.length > 0 ? dbItems : (itemsByRestaurant[name] || []);
-        bestPctByBrand[name] = allItems.length === 0
-          ? 0
-          : Math.round(Math.max(...allItems.map((i) => {
-              const macros = 'protein' in i ? { protein: i.protein, carbs: i.carbs, fat: i.fat } : i.macros;
-              return calculateMatchPercentage(mapTargets, macros);
-            })));
+    // Build a sorted list of restaurants from RESTAURANT_DB
+    const feedEntries = Object.entries(RESTAURANT_DB).map(([name, items]) => {
+      let bestPct = 0;
+      let bestProteinName = null;
+      // First pass: find best single-item match % (all categories)
+      for (const item of items) {
+        const pct = calculateMatchPercentage(feedTargets, { protein: item.protein, carbs: item.carbs, fat: item.fat });
+        if (pct > bestPct) bestPct = pct;
       }
-      if (bestPctByBrand[name] === 0 && (RESTAURANT_DB[name] || itemsByRestaurant[name])) continue;
-      markerData.push({ name, loc, bestPct: bestPctByBrand[name] });
-    }
+      // Second pass: find best protein name for the "Best Fit" preview
+      let bestProteinPct = -1;
+      for (const item of items) {
+        if (item.category !== 'protein') continue;
+        const pct = calculateMatchPercentage(feedTargets, { protein: item.protein, carbs: item.carbs, fat: item.fat });
+        if (pct > bestProteinPct) { bestProteinPct = pct; bestProteinName = item.name; }
+      }
+      return { name, bestPct: Math.round(bestPct), bestFit: bestProteinName || (items[0] ? items[0].name : '—') };
+    });
 
-    const mapRegion = userLocation
-      ? { latitude: userLocation.latitude, longitude: userLocation.longitude, latitudeDelta: 0.08, longitudeDelta: 0.08 }
-      : { latitude: 32.7767, longitude: -96.797, latitudeDelta: 0.15, longitudeDelta: 0.15 };
+    // Sort by highest match first
+    feedEntries.sort((a, b) => b.bestPct - a.bestPct);
 
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.darkBlue }}>
-        <MapView
-          style={StyleSheet.absoluteFill}
-          region={mapRegion}
-          showsUserLocation={true}
-          showsMyLocationButton={false}
-        >
-          {markerData.map((m, idx) => (
-            <RestaurantMarker
-              key={m.loc.placeId || `${m.name}_${idx}`}
-              m={m}
-              onPress={openRestaurantDetail}
-            />
-          ))}
-        </MapView>
-
         <SubViewHeader
           title="Eat Out"
           onHome={goHome}
           backLabel="Targets"
           onBack={() => setEatOutStep('briefing')}
         />
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={eoFeedStyles.list}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={eoFeedStyles.subtitle}>Best macro matches · tap to build your meal</Text>
+          {feedEntries.map(({ name, bestPct, bestFit }) => {
+            const brand = RESTAURANT_BRAND[name] || { color: COLORS.darkGreen, initials: name[0] };
+            const badgeBg = bestPct >= 80 ? COLORS.accentGreen : bestPct >= 50 ? '#D4860A' : '#555';
+            return (
+              <TouchableOpacity
+                key={name}
+                style={eoFeedStyles.card}
+                onPress={() => openRestaurantDetail(name)}
+                activeOpacity={0.78}
+              >
+                {/* Brand thumbnail */}
+                <View style={[eoFeedStyles.thumb, { backgroundColor: brand.color }]}>
+                  <Text style={eoFeedStyles.thumbInitials}>{brand.initials}</Text>
+                </View>
+
+                {/* Card body */}
+                <View style={eoFeedStyles.cardBody}>
+                  <View style={eoFeedStyles.cardTop}>
+                    <Text style={eoFeedStyles.cardName} numberOfLines={1}>{name}</Text>
+                    <View style={[eoFeedStyles.matchBadge, { backgroundColor: badgeBg }]}>
+                      <Text style={eoFeedStyles.matchBadgeText}>{bestPct}% Match</Text>
+                    </View>
+                  </View>
+                  <Text style={eoFeedStyles.bestFitLabel}>BEST FIT</Text>
+                  <Text style={eoFeedStyles.bestFitName} numberOfLines={1}>{bestFit}</Text>
+                </View>
+
+                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.25)" />
+              </TouchableOpacity>
+            );
+          })}
+          <View style={{ height: 40 }} />
+        </ScrollView>
       </View>
     );
   };
@@ -2036,7 +2042,7 @@ export default function App() {
     if (eoMenuLoading || (!eoDetailMenu && !eoMenuData)) {
       return (
         <View style={detailStyles.container}>
-          <SubViewHeader title={eatOutSelectedRestaurant} onHome={goHome} backLabel="Map" onBack={() => setEatOutStep('map')} />
+          <SubViewHeader title={eatOutSelectedRestaurant} onHome={goHome} backLabel="Restaurants" onBack={() => setEatOutStep('feed')} />
           <View style={detailStyles.loadingWrap}>
             <ActivityIndicator size="large" color={COLORS.accentGreen} />
             <Text style={detailStyles.loadingText}>
@@ -2051,7 +2057,7 @@ export default function App() {
       // eoMenuData exists but empty — no API key and not in DB
       return (
         <View style={detailStyles.container}>
-          <SubViewHeader title={eatOutSelectedRestaurant} onHome={goHome} backLabel="Map" onBack={() => setEatOutStep('map')} />
+          <SubViewHeader title={eatOutSelectedRestaurant} onHome={goHome} backLabel="Restaurants" onBack={() => setEatOutStep('feed')} />
           <View style={detailStyles.loadingWrap}>
             <Ionicons name="restaurant-outline" size={40} color={COLORS.muted} style={{ marginBottom: 12 }} />
             <Text style={detailStyles.loadingText}>Menu unavailable</Text>
@@ -2067,31 +2073,33 @@ export default function App() {
     const tC = parseFloat(eatOutTargetCarbs)   || 0;
     const tF = parseFloat(eatOutTargetFat)     || 0;
 
-    const isHit = eoDetailMatchPct >= 95;
+    // Pulse when protein is within 5g of the goal (approaching or at target, not over)
+    const isNearProteinGoal = tP > 0
+      && eoDetailTotals.protein >= tP - 5
+      && eoDetailTotals.protein <= tP;
 
-    // Pulse green on transition to hit
-    if (isHit && !eoDetailWasHitRef.current) {
+    if (isNearProteinGoal && !eoDetailWasHitRef.current) {
       eoDetailWasHitRef.current = true;
       eoDetailPulseAnim.setValue(0);
       Animated.loop(
         Animated.sequence([
-          Animated.timing(eoDetailPulseAnim, { toValue: 1, duration: 550, useNativeDriver: false }),
-          Animated.timing(eoDetailPulseAnim, { toValue: 0, duration: 550, useNativeDriver: false }),
+          Animated.timing(eoDetailPulseAnim, { toValue: 1, duration: 500, useNativeDriver: false }),
+          Animated.timing(eoDetailPulseAnim, { toValue: 0, duration: 500, useNativeDriver: false }),
         ]),
-        { iterations: 3 },
+        { iterations: 4 },
       ).start();
-    } else if (!isHit) {
+    } else if (!isNearProteinGoal) {
       eoDetailWasHitRef.current = false;
     }
 
-    const ringGlow = isHit
-      ? eoDetailPulseAnim.interpolate({ inputRange: [0, 1], outputRange: ['rgba(0,121,107,0.25)', 'rgba(0,230,118,0.55)'] })
+    const ringGlow = isNearProteinGoal
+      ? eoDetailPulseAnim.interpolate({ inputRange: [0, 1], outputRange: ['rgba(0,121,107,0.2)', 'rgba(0,230,118,0.65)'] })
       : 'transparent';
 
-    // Progress bar helper
+    // Progress bar helper — bar turns red the moment current > target
     const MacroBar = ({ label, current, target, color }) => {
-      const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
-      const isOver = target > 0 && current > target * 1.05;
+      const pct     = target > 0 ? Math.min(100, (current / target) * 100) : 0;
+      const isOver  = target > 0 && current > target;
       const barColor = isOver ? '#ff6b6b' : color;
       return (
         <View style={detailStyles.barRow}>
@@ -2106,88 +2114,117 @@ export default function App() {
       );
     };
 
-    // Macro pill — shows P/C/F values + optional AI badge
-    const MacroPill = ({ macros, isAIResult }) => (
-      <View style={detailStyles.macroPillRow}>
-        <View style={detailStyles.macroPill}>
-          <Text style={detailStyles.macroPillText}>
-            {macros.protein > 0 ? `+${macros.protein}P` : ''}
-            {macros.carbs > 0   ? `  +${macros.carbs}C` : ''}
-            {macros.fat > 0     ? `  +${macros.fat}F`   : ''}
-          </Text>
-        </View>
-        {isAIResult && (
-          <View style={detailStyles.aiBadge}>
-            <Text style={detailStyles.aiBadgeText}>✨ AI Estimated</Text>
-          </View>
-        )}
-      </View>
-    );
+    // Macro pill — base per-serving macros always shown; scaled total appended when qty > 1
+    const MacroPill = ({ baseMacros, qty, isAIResult }) => {
+      const baseParts = [];
+      if (baseMacros.protein > 0) baseParts.push(`${baseMacros.protein}P`);
+      if (baseMacros.carbs   > 0) baseParts.push(`${baseMacros.carbs}C`);
+      if (baseMacros.fat     > 0) baseParts.push(`${baseMacros.fat}F`);
+      const baseStr = baseParts.join(' · ');
 
-    // Menu section renderer
-    const renderSection = (title, items, isRadio, selections, onToggle) => {
+      let scaledStr = null;
+      if (qty > 1) {
+        const sP = Math.round(baseMacros.protein * qty);
+        const sC = Math.round(baseMacros.carbs   * qty);
+        const sF = Math.round(baseMacros.fat     * qty);
+        const sParts = [];
+        if (sP > 0) sParts.push(`${sP}P`);
+        if (sC > 0) sParts.push(`${sC}C`);
+        if (sF > 0) sParts.push(`${sF}F`);
+        scaledStr = `×${qty} = ${sParts.join(' · ')}`;
+      }
+
+      return (
+        <View style={detailStyles.macroPillRow}>
+          <View style={detailStyles.macroPill}>
+            <Text style={detailStyles.macroPillText}>
+              {baseStr}
+              {scaledStr ? `  →  ${scaledStr}` : (qty === 0 ? '  per serving' : '')}
+            </Text>
+          </View>
+          {isAIResult && (
+            <View style={detailStyles.aiBadge}>
+              <Text style={detailStyles.aiBadgeText}>✨ AI</Text>
+            </View>
+          )}
+        </View>
+      );
+    };
+
+    // Unified quantity-stepper section — all categories treated identically
+    const renderSection = (title, items) => {
       if (!items || items.length === 0) return null;
       return (
         <View style={detailStyles.section}>
           <Text style={detailStyles.sectionLabel}>{title}</Text>
           {items.map((item) => {
-            const selected = isRadio
-              ? eatOutProteinPick === item.name
-              : !!selections[item.name];
+            const qty    = eoItemQty[item.name] || 0;
+            const active = qty > 0;
             return (
-              <TouchableOpacity
+              <View
                 key={item.name}
-                style={[detailStyles.menuRow, selected && detailStyles.menuRowSelected]}
-                onPress={() => onToggle(item.name)}
-                activeOpacity={0.75}
+                style={[detailStyles.menuRow, active && detailStyles.menuRowSelected]}
               >
-                {/* Control indicator */}
-                {isRadio ? (
-                  <View style={[detailStyles.radio, selected && detailStyles.radioSelected]}>
-                    {selected && <View style={detailStyles.radioDot} />}
-                  </View>
-                ) : (
-                  <View style={[detailStyles.checkBox, selected && detailStyles.checkBoxSelected]}>
-                    {selected && <Ionicons name="checkmark" size={12} color={COLORS.white} />}
-                  </View>
-                )}
                 {/* Item info */}
                 <View style={detailStyles.menuRowInfo}>
-                  <Text style={[detailStyles.menuRowName, selected && detailStyles.menuRowNameSelected]}>
+                  <Text style={[detailStyles.menuRowName, active && detailStyles.menuRowNameSelected]}>
                     {item.name}
                   </Text>
-                  {item.servingWeightG != null && (
-                    <Text style={detailStyles.servingSize}>
-                      {mbUnit === 'oz'
-                        ? `${(item.servingWeightG / 28.35).toFixed(1)} oz serving`
-                        : `${item.servingWeightG}g serving`}
-                    </Text>
-                  )}
-                  <MacroPill macros={item.macros} isAIResult={item.isAIResult} />
+                  <MacroPill baseMacros={item.macros} qty={qty} isAIResult={item.isAIResult} />
                 </View>
-              </TouchableOpacity>
+
+                {/* Quantity stepper */}
+                <View style={detailStyles.stepperRow}>
+                  <TouchableOpacity
+                    style={[detailStyles.stepperBtn, qty === 0 && detailStyles.stepperBtnDisabled]}
+                    onPress={() => {
+                      if (qty === 0) return;
+                      setEoItemQty((prev) => {
+                        const next = { ...prev };
+                        if (qty - 1 === 0) delete next[item.name]; else next[item.name] = qty - 1;
+                        return next;
+                      });
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 6 }}
+                    activeOpacity={qty > 0 ? 0.65 : 1}
+                  >
+                    <Text style={[detailStyles.stepperIcon, qty === 0 && detailStyles.stepperIconDisabled]}>−</Text>
+                  </TouchableOpacity>
+
+                  <Text style={[detailStyles.stepperCount, active && detailStyles.stepperCountActive]}>
+                    {qty}
+                  </Text>
+
+                  <TouchableOpacity
+                    style={detailStyles.stepperBtn}
+                    onPress={() => setEoItemQty((prev) => ({ ...prev, [item.name]: (prev[item.name] || 0) + 1 }))}
+                    hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
+                    activeOpacity={0.65}
+                  >
+                    <Text style={detailStyles.stepperIcon}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             );
           })}
         </View>
       );
     };
 
-    // Build confirm meal name and detect if any selected item is AI-estimated
-    const hasSelection = !!eatOutProteinPick;
+    // Derived selection helpers
+    const hasSelection = Object.values(eoItemQty).some((q) => q > 0);
     const buildMealName = () => {
-      const parts = [eatOutProteinPick];
-      Object.entries(eatOutBaseSelections).forEach(([n, v]) => v && parts.push(n));
-      Object.entries(eatOutAddonSelections).forEach(([n, v]) => v && parts.push(n));
-      return parts.filter(Boolean).join(' + ');
+      const allItems = [...eoDetailMenu.proteins, ...eoDetailMenu.bases, ...eoDetailMenu.addons];
+      return allItems
+        .filter((i) => (eoItemQty[i.name] || 0) > 0)
+        .map((i) => {
+          const q = eoItemQty[i.name];
+          return q > 1 ? `${i.name} ×${q}` : i.name;
+        })
+        .join(' + ');
     };
     const hasAIItems = eoMenuData
-      ? eoMenuData.some((i) =>
-          i.isAIResult && (
-            eatOutProteinPick === i.name ||
-            !!eatOutBaseSelections[i.name] ||
-            !!eatOutAddonSelections[i.name]
-          )
-        )
+      ? eoMenuData.some((i) => i.isAIResult && (eoItemQty[i.name] || 0) > 0)
       : false;
 
     return (
@@ -2195,14 +2232,14 @@ export default function App() {
         <SubViewHeader
           title={eatOutSelectedRestaurant}
           onHome={goHome}
-          backLabel="Map"
-          onBack={() => setEatOutStep('map')}
+          backLabel="Restaurants"
+          onBack={() => setEatOutStep('feed')}
         />
 
         {/* ── Sticky Header ── */}
         <Animated.View style={[detailStyles.stickyHeader, { shadowColor: ringGlow }]}>
           {/* MatchRing */}
-          <Animated.View style={[detailStyles.ringWrap, isHit && { shadowColor: ringGlow, shadowOpacity: 1, shadowRadius: 18, elevation: 12 }]}>
+          <Animated.View style={[detailStyles.ringWrap, isNearProteinGoal && { shadowColor: ringGlow, shadowOpacity: 1, shadowRadius: 18, elevation: 12 }]}>
             <MatchRing percentage={eoDetailMatchPct} size={96} />
           </Animated.View>
 
@@ -2216,45 +2253,30 @@ export default function App() {
 
         {/* ── Scrollable Menu ── */}
         <ScrollView style={detailStyles.menuScroll} showsVerticalScrollIndicator={false}>
-          {renderSection(
-            'PROTEINS',
-            eoDetailMenu.proteins,
-            true,
-            null,
-            (name) => setEatOutProteinPick((prev) => (prev === name ? null : name)),
-          )}
-          {renderSection(
-            'BASES',
-            eoDetailMenu.bases,
-            false,
-            eatOutBaseSelections,
-            (name) => setEatOutBaseSelections((prev) => ({ ...prev, [name]: !prev[name] })),
-          )}
-          {renderSection(
-            'ADD-ONS',
-            eoDetailMenu.addons,
-            false,
-            eatOutAddonSelections,
-            (name) => setEatOutAddonSelections((prev) => ({ ...prev, [name]: !prev[name] })),
-          )}
-          <View style={{ height: 110 }} />
+          {renderSection('PROTEINS', eoDetailMenu.proteins)}
+          {renderSection('BASES',    eoDetailMenu.bases)}
+          {renderSection('ADD-ONS',  eoDetailMenu.addons)}
+          <View style={{ height: 140 }} />
         </ScrollView>
 
-        {/* ── Confirm & Log button ── */}
+        {/* ── Confirm & Log footer ── */}
         <View style={detailStyles.confirmWrap}>
+          {/* Log summary strip */}
+          {hasSelection && (
+            <View style={detailStyles.confirmSummary}>
+              <Text style={detailStyles.confirmSummaryText}>
+                Total: {eoDetailTotals.protein}g P · {eoDetailTotals.carbs}g C · {eoDetailTotals.fat}g F
+              </Text>
+            </View>
+          )}
           <TouchableOpacity
             style={[detailStyles.confirmBtn, !hasSelection && detailStyles.confirmBtnDisabled]}
             onPress={() => {
               if (!hasSelection) return;
-              // Average confidence of AI-estimated items that are actually selected
               const avgConf = hasAIItems && eoMenuData
                 ? (() => {
                     const aiSel = eoMenuData.filter(
-                      (i) => i.isAIResult && i.confidence !== undefined && (
-                        eatOutProteinPick === i.name ||
-                        !!eatOutBaseSelections[i.name] ||
-                        !!eatOutAddonSelections[i.name]
-                      )
+                      (i) => i.isAIResult && i.confidence !== undefined && (eoItemQty[i.name] || 0) > 0
                     );
                     return aiSel.length > 0
                       ? Math.round(aiSel.reduce((s, i) => s + i.confidence, 0) / aiSel.length)
@@ -2267,7 +2289,7 @@ export default function App() {
             activeOpacity={hasSelection ? 0.85 : 1}
           >
             <Text style={detailStyles.confirmBtnText}>
-              {hasSelection ? 'Confirm & Log →' : 'Select a protein to continue'}
+              {hasSelection ? 'Confirm & Log →' : 'Add items to continue'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -2399,12 +2421,12 @@ export default function App() {
           onPress={() => {
             if (!hasTargets) return;
             Keyboard.dismiss();
-            setEatOutStep('map');
+            setEatOutStep('feed');
           }}
           activeOpacity={hasTargets ? 0.8 : 1}
         >
-          <Ionicons name="map-outline" size={20} color={COLORS.white} style={{ marginRight: 8 }} />
-          <Text style={eoStyles.scoutBtnText}>Scout Restaurants</Text>
+          <Ionicons name="restaurant-outline" size={20} color={COLORS.white} style={{ marginRight: 8 }} />
+          <Text style={eoStyles.scoutBtnText}>Find Restaurants</Text>
         </TouchableOpacity>
       </>
     );
@@ -3318,7 +3340,7 @@ export default function App() {
                 eatOutStep === 'briefing' ? (
                   <>{renderEatOutBriefing()}</>
                 ) : (
-                  null /* full-screen map rendered as overlay outside the ScrollView */
+                  null /* feed rendered as overlay outside the ScrollView */
                 )
 
               ) : (
@@ -3469,10 +3491,10 @@ export default function App() {
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
 
-      {/* ── Eat Out Full-Screen Map Overlay (step: map) ── */}
-      {currentView === 'eatOut' && eatOutStep === 'map' && (
+      {/* ── Eat Out Restaurant Feed Overlay (step: feed) ── */}
+      {currentView === 'eatOut' && eatOutStep === 'feed' && (
         <View style={StyleSheet.absoluteFill}>
-          {renderEatOutMap()}
+          {renderEatOutFeed()}
         </View>
       )}
 
@@ -5701,6 +5723,96 @@ const eoStyles = StyleSheet.create({
   },
 });
 
+// ─── Eat Out Feed StyleSheet ──────────────────────────────────────────────────
+const eoFeedStyles = StyleSheet.create({
+  list: {
+    padding: 16,
+    paddingTop: 8,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: COLORS.muted,
+    letterSpacing: 0.4,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0d1f1f',
+    borderRadius: 16,
+    marginBottom: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  thumb: {
+    width: 60,
+    height: 60,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  thumbInitials: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.white,
+    letterSpacing: -0.5,
+  },
+  cardBody: {
+    flex: 1,
+    marginRight: 4,
+  },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  cardName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.white,
+    flex: 1,
+    marginRight: 8,
+  },
+  matchBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  matchBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.white,
+    letterSpacing: 0.2,
+  },
+  bestFitLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: COLORS.muted,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  bestFitName: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.65)',
+    fontStyle: 'italic',
+  },
+});
+
 // ─── Map Marker Component ─────────────────────────────────────────────────────
 // Wrapped in memo so React skips re-rendering markers whose props haven't
 // changed — eliminates the "shimmer / flicker" caused by parent state updates
@@ -5874,42 +5986,60 @@ const detailStyles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Radio button (Proteins)
-  radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.25)',
+  // ── Quantity stepper ───────────────────────────────────────────────────────
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  stepperBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.09)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioSelected: {
-    borderColor: COLORS.accentGreen,
+  stepperBtnDisabled: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: COLORS.accentGreen,
+  stepperIcon: {
+    fontSize: 20,
+    lineHeight: 22,
+    fontWeight: '300',
+    color: COLORS.white,
   },
-
-  // Checkbox (Bases / Add-ons)
-  checkBox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  stepperIconDisabled: {
+    color: 'rgba(255,255,255,0.2)',
   },
-  checkBoxSelected: {
-    backgroundColor: COLORS.accentGreen,
-    borderColor: COLORS.accentGreen,
+  stepperCount: {
+    width: 28,
+    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.3)',
+  },
+  stepperCountActive: {
+    color: COLORS.white,
   },
 
   // ── Confirm & Log ──────────────────────────────────────────────────────────
+  confirmSummary: {
+    backgroundColor: 'rgba(0, 121, 107, 0.15)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 121, 107, 0.3)',
+    alignItems: 'center',
+  },
+  confirmSummaryText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.8)',
+    letterSpacing: 0.3,
+  },
   confirmWrap: {
     position: 'absolute',
     bottom: 0,

@@ -16,7 +16,10 @@
       "WebFetch(domain:www.chipotle.com)",
       "WebFetch(domain:www.eatthismuch.com)",
       "WebFetch(domain:www.nutritionix.com)",
-      "WebFetch(domain:chipotlecalorie.com)"
+      "WebFetch(domain:chipotlecalorie.com)",
+      "Bash(node:*)",
+      "Bash(npx expo export:*)",
+      "Bash(npx expo start:*)"
     ]
   }
 }

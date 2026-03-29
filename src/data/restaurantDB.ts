@@ -16,22 +16,28 @@ const v = (
 
 export const RESTAURANT_DB: Record<string, RestaurantMenuItem[]> = {
   'Chipotle': [
-    // Proteins — radio (isMandatory: true)
-    v('cpt_p_chicken',   'Chicken',   'protein', true,  33, 4, 6),
-    v('cpt_p_steak',     'Steak',     'protein', true,  31, 5, 7),
-    v('cpt_p_barbacoa',  'Barbacoa',  'protein', true,  25, 5, 7),
-    v('cpt_p_sofritas',  'Sofritas',  'protein', true,  10, 8, 10),
-    // Bases — checkbox (isMandatory: false)
-    v('cpt_b_wrice',  'White Rice',   'base', false, 4,  40, 3),
-    v('cpt_b_brice',  'Brown Rice',   'base', false, 4,  41, 4),
-    v('cpt_b_greens', 'Supergreens',  'base', false, 1,  3,  0),
-    // Add-ons — checkbox
-    v('cpt_a_dmeat',  'Double Meat',    'addon', false, 32, 0,  12),
-    v('cpt_a_bbean',  'Black Beans',    'addon', false, 7,  22, 1),
-    v('cpt_a_pbean',  'Pinto Beans',    'addon', false, 8,  22, 1),
-    v('cpt_a_guac',   'Guacamole',      'addon', false, 2,  8,  22),
+    // ── Proteins (per standard bowl serving) ─────────────────────────────────
+    // Source: chipotle.com/nutrition — values per 4 oz serving (113g)
+    v('cpt_p_chicken',   'Chicken',      'protein', true, 32, 1,  7),
+    v('cpt_p_steak',     'Steak',        'protein', true, 29, 1,  8),
+    v('cpt_p_carnitas',  'Carnitas',     'protein', true, 23, 0, 12),
+    v('cpt_p_barbacoa',  'Barbacoa',     'protein', true, 24, 2, 10),
+    v('cpt_p_pollo',     'Pollo Asado',  'protein', true, 28, 2,  9),
+    v('cpt_p_sofritas',  'Sofritas',     'protein', true,  8, 9, 10),
+    // ── Bases ─────────────────────────────────────────────────────────────────
+    v('cpt_b_wrice',   'White Rice',    'base', false, 4, 40, 3),
+    v('cpt_b_brice',   'Brown Rice',    'base', false, 4, 40, 4),
+    v('cpt_b_lettuce', 'Romaine Lettuce','base', false, 1,  2, 0),
+    v('cpt_b_greens',  'Supergreens',   'base', false, 1,  3, 0),
+    // ── Add-ons ────────────────────────────────────────────────────────────────
+    v('cpt_a_bbean',  'Black Beans',    'addon', false, 7, 22, 1),
+    v('cpt_a_pbean',  'Pinto Beans',    'addon', false, 8, 22, 1),
+    v('cpt_a_guac',   'Guacamole',      'addon', false, 2,  8, 22),
+    v('cpt_a_queso',  'Queso Blanco',   'addon', false, 4,  3,  8),
     v('cpt_a_cheese', 'Cheese',         'addon', false, 6,  1,  8),
     v('cpt_a_scream', 'Sour Cream',     'addon', false, 2,  3,  9),
+    v('cpt_a_corn',   'Corn Salsa',     'addon', false, 2, 19,  1),
+    v('cpt_a_tomato', 'Fresh Tomato Salsa','addon', false, 1,  4, 0),
     v('cpt_a_fveg',   'Fajita Veggies', 'addon', false, 1,  5,  3),
   ],
 
