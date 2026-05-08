@@ -77,6 +77,8 @@ export const s = StyleSheet.create({
   tagAITxt:        { fontSize: 10, color: '#ffb74d', fontWeight: '600' },
   tagEdited:       { backgroundColor: 'rgba(144,202,249,0.15)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   tagEditedTxt:    { fontSize: 10, color: '#90caf9', fontWeight: '600' },
+  tagOfficial:     { backgroundColor: 'rgba(0,200,83,0.18)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  tagOfficialTxt:  { fontSize: 10, color: '#00e676', fontWeight: '700', letterSpacing: 0.3 },
   verifyBtn:       { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(0,121,107,0.5)' },
   verifyBtnTxt:    { fontSize: 12, fontWeight: '700', color: C.accent },
 

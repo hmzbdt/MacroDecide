@@ -14,9 +14,10 @@ import * as Location     from 'expo-location';
 import { calculateMatchPercentage }                          from './src/utils/engine';
 import MatchRing                                             from './src/components/MatchRing';
 import { getCurrentLocation, searchNearbyRestaurantsLive }  from './src/services/proximityService';
-import { fetchFatSecretMenuSmart }                           from './src/services/fatSecretService';
 import { analyzeMenuImage, MenuVisionRateLimitError }        from './src/services/menuVisionService';
 import { RESTAURANT_DB }                                     from './src/data/restaurantDB';
+import { VERIFIED_MENUS }                                    from './src/data/verifiedMenus';
+import ChipotleBuilder                                       from './src/components/ChipotleBuilder';
 import { s, C }                                              from './src/styles/appStyles';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -24,6 +25,9 @@ const CACHE_PREFIX   = 'menu_v2_';
 const CACHE_TTL_MS   = 7 * 24 * 60 * 60 * 1000;
 const GEO_RADIUS_M   = 200;
 const SEARCH_CTX_KEY = '@md_search_ctx';
+
+// Merged lookup for feed bestPct (VERIFIED_MENUS takes precedence over RESTAURANT_DB)
+const COMBINED_MENUS = { ...RESTAURANT_DB, ...VERIFIED_MENUS };
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
 function haversineM(lat1, lon1, lat2, lon2) {
@@ -151,14 +155,21 @@ export default function App() {
     (async () => {
       const cacheKey = `${CACHE_PREFIX}${selPlaceId.current || selName}`;
 
-      // 1. Verified local DB
+      // 1. Verified chain manifest — instant, no network
+      const vm = VERIFIED_MENUS[selName];
+      if (vm?.length) {
+        if (!cancelled) { setMenuItems(vm); setMenuLoading(false); }
+        return;
+      }
+
+      // 2. Legacy local DB
       const db = RESTAURANT_DB[selName];
       if (db?.length) {
         if (!cancelled) { setMenuItems(db); setMenuLoading(false); }
         return;
       }
 
-      // 2. AsyncStorage TTL cache (keyed by place_id when available)
+      // 3. AsyncStorage TTL cache (keyed by place_id when available)
       const cached = await cacheRead(cacheKey);
       if (!cancelled && cached) {
         setMenuItems(cached); setMenuFromCache(true); setMenuLoading(false);
@@ -166,12 +177,8 @@ export default function App() {
       }
       if (cancelled) return;
 
-      // 3. FatSecret (brand-only — enforced inside service; [] if no brand match)
+      // 4. No data — prompt user to scan
       setMenuItems([]); setMenuLoading(false);
-      const fsItems = await fetchFatSecretMenuSmart(selName).catch(() => []);
-      if (cancelled) return;
-      if (fsItems.length) { setMenuItems(fsItems); cacheWrite(cacheKey, fsItems); }
-      // empty → empty state shown; user prompted to scan
     })();
 
     return () => { cancelled = true; };
@@ -373,17 +380,17 @@ export default function App() {
     const targets = { protein: parseFloat(targetP)||0, carbs: parseFloat(targetC)||0, fat: parseFloat(targetF)||0 };
 
     const rawList = restaurants.length > 0 ? restaurants
-      : (!feedLoading ? Object.keys(RESTAURANT_DB).map(name => ({ name, distance: null, address: null, latitude: null, longitude: null, placeId: null })) : []);
+      : (!feedLoading ? Object.keys(COMBINED_MENUS).map(name => ({ name, distance: null, address: null, latitude: null, longitude: null, placeId: null })) : []);
 
     const cards = rawList.map(r => {
-      const key = Object.keys(RESTAURANT_DB).find(k =>
+      const key = Object.keys(COMBINED_MENUS).find(k =>
         k.toLowerCase() === r.name.toLowerCase() ||
         r.name.toLowerCase().includes(k.toLowerCase()) ||
         k.toLowerCase().includes(r.name.toLowerCase()));
       let bestPct = null, bestFit = null;
       if (key) {
         let best = 0;
-        for (const item of RESTAURANT_DB[key]) {
+        for (const item of COMBINED_MENUS[key]) {
           const pct = calculateMatchPercentage(targets, { protein: item.protein, carbs: item.carbs, fat: item.fat });
           if (pct > best) { best = pct; if (item.category === 'protein') bestFit = item.name; }
         }
@@ -463,7 +470,7 @@ export default function App() {
             <Text style={[s.menuName, active && s.menuNameActive]}>{item.name}</Text>
             <View style={s.pillRow}>
               <View style={s.pill}><Text style={s.pillTxt}>{macro}{scaled}</Text></View>
-              {item.dataSource === 'fatsecret' && <View style={s.tagVerified}><Text style={s.tagVerifiedTxt}>✅ Verified</Text></View>}
+              {item.dataSource === 'verified' && <View style={s.tagOfficial}><Text style={s.tagOfficialTxt}>★ OFFICIAL</Text></View>}
               {item.isAIResult && item.dataSource !== 'userCorrected' && <View style={s.tagAI}><Text style={s.tagAITxt}>✨ AI</Text></View>}
               {item.dataSource === 'userCorrected' && <View style={s.tagEdited}><Text style={s.tagEditedTxt}>✏️ Edited</Text></View>}
             </View>
@@ -542,6 +549,8 @@ export default function App() {
               {ocrLoading ? <ActivityIndicator size="small" color={C.white} /> : <Text style={s.emptyBtnTxt}>Scan Physical Menu</Text>}
             </TouchableOpacity>
           </View>
+        ) : selName === 'Chipotle' ? (
+          <ChipotleBuilder menuItems={items} itemQty={itemQty} onInc={incQty} onDec={decQty} />
         ) : (
           <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
             {ocrItems.length > 0 && (
