@@ -19,7 +19,11 @@
       "WebFetch(domain:chipotlecalorie.com)",
       "Bash(node:*)",
       "Bash(npx expo export:*)",
-      "Bash(npx expo start:*)"
+      "Bash(npx expo start:*)",
+      "Bash(grep '\"\"expo\"\"' /c/Users/Hamza/Documents/Apps/MacroDecide/package.json)",
+      "Bash(npx tsc:*)",
+      "Bash(python3:*)",
+      "Bash(git reset *)"
     ]
   }
 }

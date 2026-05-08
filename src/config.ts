@@ -1,17 +1,19 @@
-// ─── API Keys ─────────────────────────────────────────────────────────────────
-// Gemini: AI macro estimation for restaurants not in the local database.
-// Get a free key at: https://aistudio.google.com/apikey
-export const GEMINI_API_KEY = '';
+// ─── API Keys (read from .env via EXPO_PUBLIC_* prefix) ──────────────────────
+// Never hardcode secrets here. Set them in your .env file at the project root.
 
-// Google Places: live nearby restaurant search with rankby=distance.
-// Get a key at: https://console.cloud.google.com (enable "Places API")
-export const GOOGLE_PLACES_API_KEY = '';
+/** Gemini: AI macro estimation for restaurants not in the local database. */
+export const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_KEY ?? '';
 
-// Nutritionix: verified restaurant brand nutrition (checked first in data chain).
-// Free developer key at: https://developer.nutritionix.com
-export const NUTRITIONIX_APP_ID  = '';
-export const NUTRITIONIX_APP_KEY = '';
+/** Google Places (New): live nearby restaurant search. */
+export const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 
-// Spoonacular: secondary menu-item nutrition source (checked after Nutritionix).
-// Free key at: https://spoonacular.com/food-api
-export const SPOONACULAR_API_KEY = '';
+/** FatSecret: OAuth 2.0 client credentials for foods.search. */
+export const FATSECRET_CLIENT_ID     = process.env.EXPO_PUBLIC_FATSECRET_CLIENT_ID     ?? '';
+export const FATSECRET_CLIENT_SECRET = process.env.EXPO_PUBLIC_FATSECRET_CLIENT_SECRET ?? '';
+
+/** Nutritionix: verified restaurant brand nutrition (secondary source). */
+export const NUTRITIONIX_APP_ID  = process.env.EXPO_PUBLIC_NUTRITIONIX_APP_ID  ?? '';
+export const NUTRITIONIX_APP_KEY = process.env.EXPO_PUBLIC_NUTRITIONIX_APP_KEY ?? '';
+
+/** Spoonacular: tertiary menu-item nutrition source. */
+export const SPOONACULAR_API_KEY = process.env.EXPO_PUBLIC_SPOONACULAR_API_KEY ?? '';

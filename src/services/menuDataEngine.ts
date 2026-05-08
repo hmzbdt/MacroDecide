@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { RESTAURANT_DB } from '../data/restaurantDB';
 import { estimateRestaurantMenu, estimateMacrosFromDescription } from './aiMacroEstimator';
+import { fetchFatSecretMenuSmart } from './fatSecretService';
 import { fetchNutritionixMenu } from './nutritionixService';
 import { fetchSpoonacularMenu } from './spoonacularService';
 import { RestaurantMenu, RestaurantMenuItem } from '../types/restaurant';
@@ -58,14 +59,15 @@ async function fillMissingMacros(
  *
  *  1. Verified local TypeScript DB  — instant, zero network.
  *  2. AsyncStorage AI cache         — instant after first external fetch.
- *  3. Nutritionix branded search    — real verified restaurant nutrition.
- *  4. Spoonacular menu-item search  — secondary nutrition source.
- *  5. Gemini AI estimation          — last resort; flags every item isAIResult: true.
+ *  3. FatSecret foods.search        — OAuth 2.0 client credentials; real brand nutrition.
+ *  4. Nutritionix branded search    — secondary verified nutrition source.
+ *  5. Spoonacular menu-item search  — tertiary nutrition source.
+ *  6. Gemini AI estimation          — last resort; flags every item isAIResult: true.
  *
- * At steps 1, 3, 4, and 5: any item with all-zero macros is individually
+ * At steps 1, 3, 4, 5, and 6: any item with all-zero macros is individually
  * backfilled via estimateMacrosFromDescription and flagged isAIResult: true.
  *
- * Items from steps 3–5 are written to AsyncStorage so the next call is instant.
+ * Items from steps 3–6 are written to AsyncStorage so the next call is instant.
  */
 export async function getRestaurantMenu(
   restaurantName: string,
@@ -90,7 +92,15 @@ export async function getRestaurantMenu(
     // Cache miss is non-fatal — continue to live sources
   }
 
-  // ── 3. Nutritionix ───────────────────────────────────────────────────────────
+  // ── 3. FatSecret ─────────────────────────────────────────────────────────────
+  const fsItems = await fetchFatSecretMenuSmart(restaurantName);
+  if (fsItems.length > 0) {
+    const items = await fillMissingMacros(fsItems, restaurantName);
+    await cacheItems(cacheKey, items);
+    return { restaurantName, items };
+  }
+
+  // ── 4. Nutritionix ───────────────────────────────────────────────────────────
   const nixItems = await fetchNutritionixMenu(restaurantName);
   if (nixItems.length > 0) {
     const items = await fillMissingMacros(nixItems, restaurantName);
@@ -98,7 +108,7 @@ export async function getRestaurantMenu(
     return { restaurantName, items };
   }
 
-  // ── 4. Spoonacular ───────────────────────────────────────────────────────────
+  // ── 5. Spoonacular ───────────────────────────────────────────────────────────
   const spoonItems = await fetchSpoonacularMenu(restaurantName);
   if (spoonItems.length > 0) {
     const items = await fillMissingMacros(spoonItems, restaurantName);
@@ -106,7 +116,7 @@ export async function getRestaurantMenu(
     return { restaurantName, items };
   }
 
-  // ── 5. Gemini AI estimation ──────────────────────────────────────────────────
+  // ── 6. Gemini AI estimation ──────────────────────────────────────────────────
   const rawItems = await estimateRestaurantMenu(restaurantName);
   const aiItems  = rawItems.length > 0
     ? await fillMissingMacros(rawItems, restaurantName)

@@ -2,7 +2,7 @@ import { GEMINI_API_KEY } from '../config';
 import { RestaurantMenuItem } from '../types/restaurant';
 
 const GEMINI_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 // ── Restaurant-level prompt ────────────────────────────────────────────────────
 // Generates up to 10 categorised menu items with a self-reported confidence score.
@@ -86,6 +86,75 @@ export async function estimateRestaurantMenu(
     isAIResult: true,
     dataSource: 'ai' as const,
   }));
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function msDelay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Calls Gemini to estimate a restaurant menu, then dispatches each item
+ * one-by-one via `onItem` with a 200 ms gap to create a streaming-like effect.
+ *
+ * The `signal` parameter allows the caller to abort via AbortController:
+ *   - The underlying fetch is cancelled immediately.
+ *   - The per-item dispatch loop halts.
+ *
+ * Already-existing item names are NOT filtered here — callers should dedup.
+ * Returns silently (no throw) when the signal is aborted or no key is set.
+ */
+export async function estimateRestaurantMenuStreamed(
+  restaurantName: string,
+  onItem: (item: RestaurantMenuItem) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  if (!GEMINI_API_KEY || signal.aborted) return;
+
+  let response: Response;
+  try {
+    response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal,
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: RESTAURANT_PROMPT(restaurantName) }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.1,
+          maxOutputTokens: 1500,
+        },
+      }),
+    });
+  } catch (_) {
+    // AbortError or network failure — exit silently
+    return;
+  }
+
+  if (!response.ok || signal.aborted) return;
+
+  const json = await response.json();
+  if (signal.aborted) return;
+
+  const rawText: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? '[]';
+  let parsed: any[] = [];
+  try { parsed = JSON.parse(rawText); } catch { return; }
+
+  for (const item of parsed) {
+    if (signal.aborted) return;
+    onItem({
+      ...item,
+      protein:    Math.max(0, Math.round(item.protein ?? 0)),
+      carbs:      Math.max(0, Math.round(item.carbs   ?? 0)),
+      fat:        Math.max(0, Math.round(item.fat     ?? 0)),
+      confidence: item.confidence != null
+        ? Math.max(0, Math.min(100, Math.round(item.confidence)))
+        : undefined,
+      isAIResult: true,
+      dataSource: 'ai' as const,
+    });
+    await msDelay(200);
+  }
 }
 
 /**

@@ -3,7 +3,7 @@
 export type MenuCategory = 'protein' | 'base' | 'addon';
 
 /** Where the item's macro data originated. */
-export type DataSource = 'db' | 'nutritionix' | 'spoonacular' | 'ai';
+export type DataSource = 'db' | 'fatsecret' | 'nutritionix' | 'spoonacular' | 'ai' | 'ocr' | 'verified' | 'userCorrected';
 
 /**
  * A single selectable item on a restaurant menu.
@@ -27,6 +27,12 @@ export interface RestaurantMenuItem {
   servingWeightG?: number;
   /** Audit trail: which data source produced this item's macros. */
   dataSource?: DataSource;
+  /** Raw serving label from FatSecret, e.g. "1 sandwich", "100g", "2044g". */
+  servingLabel?: string;
+  /** True when the serving size was >500g and macros were divided to per-100g. */
+  normalizedPer100g?: boolean;
+  /** True when any single macro exceeded 150g and was divided by 10 (macro ceiling sanity check). */
+  highServingSize?: boolean;
 }
 
 export interface RestaurantMenu {

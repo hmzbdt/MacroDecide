@@ -5,7 +5,17 @@ import { GOOGLE_PLACES_API_KEY } from '../config';
 // Consultant's Radius: 10 miles max search distance
 const MAX_SEARCH_RADIUS_MILES = 10;
 
+// Legacy Places API (for single-chain lookups)
 const PLACES_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+
+// Places API (New) — searchNearby endpoint
+const PLACES_NEW_NEARBY_URL = 'https://places.googleapis.com/v1/places:searchNearby';
+
+// Default center: Spring, TX (used as fallback when GPS unavailable)
+const SPRING_TX = { latitude: 29.2130, longitude: -95.4010 };
+
+// 5-mile feed radius in metres
+const FEED_RADIUS_METRES = 8046.72;
 
 // Mock restaurant locations (in production, replace with Google Places API)
 const RESTAURANT_CHAINS = {
@@ -90,7 +100,7 @@ export async function getCurrentLocation() {
  * Calculate distance between two coordinates (Haversine formula)
  * @returns {number} Distance in miles
  */
-function calculateDistance(lat1, lon1, lat2, lon2) {
+export function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 3959; // Earth's radius in miles
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
@@ -149,6 +159,78 @@ function generateMockLocation(userLat, userLon, restaurantName) {
     placeId: RESTAURANT_CHAINS[restaurantName]?.placeId || 'mock_place',
     isMock: true,
   };
+}
+
+/**
+ * Search for restaurants near the user using the Google Places API (New).
+ *
+ * Uses `places:searchNearby` with `includedPrimaryTypes: ['restaurant']`.
+ * Falls back to Spring, TX (29.2130, -95.4010) when location is null.
+ * Radius: 5 miles (8046.72 m).
+ *
+ * @param {{latitude: number, longitude: number} | null} userLocation
+ * @returns {Promise<Array<{name: string, placeId: string, distance: number, address: string}>>}
+ */
+export async function searchNearbyRestaurantsLive(userLocation) {
+  if (!GOOGLE_PLACES_API_KEY) return [];
+
+  const usingFallback = !userLocation;
+  const center = userLocation ?? SPRING_TX;
+  const { latitude, longitude } = center;
+
+  console.log(
+    `[Places] searchNearbyRestaurantsLive — center: (${latitude}, ${longitude})` +
+    (usingFallback ? ' [FALLBACK: Spring, TX 29.2130, -95.4010]' : ' [GPS]') +
+    ` radius: ${FEED_RADIUS_METRES}m (5 mi)`,
+  );
+
+  try {
+    const response = await fetch(PLACES_NEW_NEARBY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type':    'application/json',
+        'X-Goog-Api-Key':  GOOGLE_PLACES_API_KEY,
+        'X-Goog-FieldMask': 'places.displayName,places.location,places.formattedAddress,places.id',
+      },
+      body: JSON.stringify({
+        includedPrimaryTypes: ['restaurant'],
+        maxResultCount: 20,
+        locationRestriction: {
+          circle: {
+            center: { latitude, longitude },
+            radius: FEED_RADIUS_METRES,
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.log(`[Places] Error ${response.status}: ${errText}`);
+      return [];
+    }
+
+    const data = await response.json();
+    const places = data.places ?? [];
+    console.log(`[Places] OK — ${places.length} restaurants found near (${latitude}, ${longitude})`);
+
+    return places.map((place) => {
+      const lat  = place.location?.latitude  ?? latitude;
+      const lng  = place.location?.longitude ?? longitude;
+      const dist = calculateDistance(latitude, longitude, lat, lng);
+      return {
+        name:      place.displayName?.text ?? 'Restaurant',
+        placeId:   place.id ?? '',
+        distance:  dist,
+        address:   place.formattedAddress ?? '',
+        latitude:  lat,
+        longitude: lng,
+      };
+    });
+  } catch (err) {
+    console.error('[ProximityService] searchNearbyRestaurantsLive failed:', err);
+    return [];
+  }
 }
 
 /**
