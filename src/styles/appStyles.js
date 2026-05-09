@@ -33,6 +33,24 @@ export const s = StyleSheet.create({
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   centerTxt:   { color: C.muted, fontSize: 14, textAlign: 'center', lineHeight: 22 },
 
+  // ── Smart Recommendation card ─────────────────────────────────────────────
+  recCard:      { margin: 14, marginBottom: 4, backgroundColor: 'rgba(0,121,107,0.12)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(0,121,107,0.3)' },
+  recHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  recHeaderTxt: { fontSize: 11, fontWeight: '700', color: C.accent, letterSpacing: 0.8, textTransform: 'uppercase' },
+  recBody:      { fontSize: 14, color: C.gray, lineHeight: 22, marginBottom: 4 },
+  recHighlight: { fontWeight: '800', color: C.white, fontSize: 15 },
+  recNote:      { fontSize: 11, color: C.accent, marginTop: 2, marginBottom: 6 },
+  recFooter:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+  recMacroTxt:  { fontSize: 12, color: C.muted, flex: 1 },
+  recLogBtn:    { backgroundColor: C.accent, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
+  recLogBtnTxt: { fontSize: 13, fontWeight: '700', color: C.white },
+
+  // ── Feed radius slider ─────────────────────────────────────────────────────
+  radiusRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+  radiusLabel:  { fontSize: 12, color: C.muted, width: 44 },
+  radiusSlider: { flex: 1, height: 36, marginHorizontal: 4 },
+  radiusValue:  { fontSize: 12, fontWeight: '700', color: C.accent, width: 34, textAlign: 'right' },
+
   // ── Feed ──────────────────────────────────────────────────────────────────
   feedList:    { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 20 },
   feedCard:    { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
@@ -90,6 +108,7 @@ export const s = StyleSheet.create({
   stepIconDim:     { color: 'rgba(255,255,255,0.2)' },
   stepCount:       { fontSize: 14, fontWeight: '600', color: C.muted, minWidth: 24, textAlign: 'center' },
   stepCountActive: { color: C.white },
+  stepInput:       { padding: 0, minWidth: 32, height: 22 },
 
   // ── Empty state ───────────────────────────────────────────────────────────
   emptyTitle: { fontSize: 18, fontWeight: '700', color: C.white, textAlign: 'center' },

@@ -49,4 +49,40 @@ export const VERIFIED_MENUS = {
     v('bk_whop', 'Whopper (No Cheese)', 'protein', true,  28, 49, 40),
     v('bk_cfry', 'Chicken Fries (9pc)', 'addon',   false, 13, 16, 12),
   ],
+
+  'Wingstop': [
+    // Classic Bone-In Wings (6pc) — sorted by protein density (plain & dry rubs first)
+    // Source: wingstop_2026.pdf — 1pc macros × 6; density = (protein/calories) × 100
+    v('ws_bi_plain', '6pc Classic Plain',          'protein', true,  60,  0, 30), // 11.1%
+    v('ws_bi_oth',   '6pc Classic Original Hot',   'protein', true,  60,  0, 30), // 11.1%
+    v('ws_bi_caj',   '6pc Classic Cajun',           'protein', true,  60,  0, 30), // 11.1%
+    v('ws_bi_atm',   '6pc Classic Atomic',          'protein', true,  60,  6, 30), // 11.1%
+    v('ws_bi_haw',   '6pc Classic Hawaiian',        'protein', true,  60, 18, 30), // 10.0%
+    v('ws_bi_skq',   '6pc Classic Spicy Korean Q',  'protein', true,  60, 18, 30), // 10.0%
+    v('ws_bi_mh',    '6pc Classic Mango Habanero',  'protein', true,  60, 24, 30), // 10.0%
+    v('ws_bi_hbb',   '6pc Classic Hickory BBQ',     'protein', true,  60, 24, 30), // 10.0%
+    v('ws_bi_lr',    '6pc Classic Louisiana Rub',   'protein', true,  60,  0, 42), //  9.1%
+    v('ws_bi_hhr',   '6pc Classic Hot Honey Rub',   'protein', true,  60, 12, 48), //  8.3%
+    v('ws_bi_mild',  '6pc Classic Mild',            'protein', true,  60,  0, 48), //  8.3%
+    v('ws_bi_lp',    '6pc Classic Lemon Pepper',    'protein', true,  60,  0, 48), //  8.3%
+    v('ws_bi_gp',    '6pc Classic Garlic Parm',     'protein', true,  60,  6, 48), //  8.3%
+    // Tenders (5pc) — sorted by protein density (plain & dry rubs first)
+    v('ws_t_plain',  '5pc Tenders Plain',           'protein', true,  50, 50, 35), //  7.1%
+    v('ws_t_oth',    '5pc Tenders Original Hot',    'protein', true,  50, 50, 35), //  7.1%
+    v('ws_t_atm',    '5pc Tenders Atomic',           'protein', true,  50, 60, 35), //  6.7%
+    v('ws_t_caj',    '5pc Tenders Cajun',            'protein', true,  50, 55, 35), //  6.7%
+    v('ws_t_haw',    '5pc Tenders Hawaiian',         'protein', true,  50, 80, 35), //  6.3%
+    v('ws_t_skq',    '5pc Tenders Spicy Korean Q',   'protein', true,  50, 80, 35), //  5.9%
+    v('ws_t_hbb',    '5pc Tenders Hickory BBQ',      'protein', true,  50, 85, 35), //  5.9%
+    v('ws_t_mh',     '5pc Tenders Mango Habanero',   'protein', true,  50, 85, 35), //  5.9%
+    v('ws_t_lr',     '5pc Tenders Louisiana Rub',    'protein', true,  50, 50, 60), //  5.6%
+    v('ws_t_lp',     '5pc Tenders Lemon Pepper',     'protein', true,  50, 50, 65), //  5.0%
+    v('ws_t_mild',   '5pc Tenders Mild',             'protein', true,  50, 50, 70), //  5.0%
+    v('ws_t_gp',     '5pc Tenders Garlic Parm',      'protein', true,  50, 55, 70), //  4.8%
+    v('ws_t_hhr',    '5pc Tenders Hot Honey Rub',    'protein', true,  50, 70, 70), //  4.5%
+    // Sides
+    v('ws_a_vfry', 'Voodoo Fries',   'addon', false,  9, 55, 29),
+    v('ws_a_sfry', 'Seasoned Fries', 'addon', false,  5, 50, 24),
+    v('ws_a_cel',  'Celery & Ranch', 'addon', false,  1,  4, 14),
+  ],
 };

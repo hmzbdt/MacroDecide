@@ -171,7 +171,7 @@ function generateMockLocation(userLat, userLon, restaurantName) {
  * @param {{latitude: number, longitude: number} | null} userLocation
  * @returns {Promise<Array<{name: string, placeId: string, distance: number, address: string}>>}
  */
-export async function searchNearbyRestaurantsLive(userLocation) {
+export async function searchNearbyRestaurantsLive(userLocation, radiusMetres = FEED_RADIUS_METRES) {
   if (!GOOGLE_PLACES_API_KEY) return [];
 
   const usingFallback = !userLocation;
@@ -181,7 +181,7 @@ export async function searchNearbyRestaurantsLive(userLocation) {
   console.log(
     `[Places] searchNearbyRestaurantsLive — center: (${latitude}, ${longitude})` +
     (usingFallback ? ' [FALLBACK: Spring, TX 29.2130, -95.4010]' : ' [GPS]') +
-    ` radius: ${FEED_RADIUS_METRES}m (5 mi)`,
+    ` radius: ${radiusMetres}m (${(radiusMetres / 1609.34).toFixed(1)} mi)`,
   );
 
   try {
@@ -198,7 +198,7 @@ export async function searchNearbyRestaurantsLive(userLocation) {
         locationRestriction: {
           circle: {
             center: { latitude, longitude },
-            radius: FEED_RADIUS_METRES,
+            radius: radiusMetres,
           },
         },
       }),

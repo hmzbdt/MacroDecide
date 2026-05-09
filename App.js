@@ -19,6 +19,7 @@ import { RESTAURANT_DB }                                     from './src/data/re
 import { VERIFIED_MENUS }                                    from './src/data/verifiedMenus';
 import ChipotleBuilder                                       from './src/components/ChipotleBuilder';
 import { s, C }                                              from './src/styles/appStyles';
+import Slider                                                from '@react-native-community/slider';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CACHE_PREFIX   = 'menu_v2_';
@@ -52,6 +53,65 @@ async function cacheWrite(key, items) {
   try { await AsyncStorage.setItem(key, JSON.stringify({ items, cachedAt: Date.now() })); } catch {}
 }
 
+// ─── Smart Recommendation Engine ─────────────────────────────────────────────
+// Items prefixed 'ws_bi_' are 6-piece bone-in wing bundles from verifiedMenus.js.
+// Per-piece calories are derived from macros (4/4/9 kcal per g P/C/F) since
+// verifiedMenus.js does not store a calories field.
+const _WING_BUNDLE    = 6;
+const _DRY_RUB_IDS   = new Set(['ws_bi_plain','ws_bi_caj','ws_bi_atm','ws_bi_lr','ws_bi_lp','ws_bi_hhr']);
+
+function getOptimalOrder(targets, items) {
+  const tP = targets.protein || 0;
+  const tF = targets.fat     || 0;
+  const tC = targets.carbs   || 0;
+  if (tP <= 0) return null;
+
+  const wingPool = items.filter(i => i.id?.startsWith('ws_bi_'));
+  if (wingPool.length === 0) return null;
+
+  const wings = wingPool.map(i => {
+    const ppP   = i.protein / _WING_BUNDLE;
+    const ppC   = i.carbs   / _WING_BUNDLE;
+    const ppF   = i.fat     / _WING_BUNDLE;
+    const ppCal = ppP * 4 + ppC * 4 + ppF * 9;
+    return { ...i, ppP, ppC, ppF, ppCal, density: ppCal > 0 ? (ppP / ppCal) * 100 : 0 };
+  });
+
+  // Fat headroom: if the remaining fat target is < 60 % of the protein target
+  // (in grams), the user is rationing fat → steer toward dry rubs over wet sauces.
+  const isHighOnFat = tP > 0 && (tF / tP) < 0.6;
+
+  const sorted = [...wings].sort((a, b) => {
+    if (isHighOnFat) {
+      const aD = _DRY_RUB_IDS.has(a.id) ? 1 : 0;
+      const bD = _DRY_RUB_IDS.has(b.id) ? 1 : 0;
+      if (aD !== bD) return bD - aD;   // dry rubs first
+      return a.ppF - b.ppF;            // lower fat per piece within group
+    }
+    return b.density - a.density;      // default: highest protein density
+  });
+
+  const best       = sorted[0];
+  const count      = Math.min(Math.ceil(tP / best.ppP), 24);
+  const bundleQty  = Math.max(1, Math.round(count / _WING_BUNDLE));
+  const flavorName = best.name.replace(/^6pc Classic /, '');
+
+  return {
+    sentence:        `${count} ${flavorName} Traditional Wings`,
+    count,
+    bundleQty,
+    flavorName,
+    isHighOnFat,
+    isDryRub:        _DRY_RUB_IDS.has(best.id),
+    estimatedMacros: {
+      protein: Math.round(count * best.ppP),
+      carbs:   Math.round(count * best.ppC),
+      fat:     Math.round(count * best.ppF),
+    },
+    logQty: { [best.name]: bundleQty },
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default function App() {
 
@@ -64,9 +124,11 @@ export default function App() {
   const [targetF, setTargetF] = useState('');
 
   // ── Feed ──────────────────────────────────────────────────────────────────
-  const [restaurants, setRestaurants] = useState([]);
-  const [feedLoading, setFeedLoading] = useState(false);
-  const searchCtxRef = useRef(null);
+  const [restaurants,   setRestaurants]   = useState([]);
+  const [feedLoading,   setFeedLoading]   = useState(false);
+  const [searchRadius,  setSearchRadius]  = useState(5);
+  const searchCtxRef   = useRef(null);
+  const searchRadiusRef = useRef(5);
 
   // ── Detail: selected restaurant ───────────────────────────────────────────
   const [selName,    setSelName]    = useState('');
@@ -79,6 +141,7 @@ export default function App() {
   const [menuLoading,  setMenuLoading]  = useState(false);
   const [menuFromCache,setMenuFromCache]= useState(false);
   const [itemQty,      setItemQty]      = useState({});
+  const [stepDraft,    setStepDraft]    = useState({ name: null, text: '' });
 
   // ── Detail: OCR scan ──────────────────────────────────────────────────────
   const [ocrItems,    setOcrItems]    = useState([]);
@@ -113,7 +176,7 @@ export default function App() {
         }
       }
       const center  = loc ?? { latitude: 29.2130, longitude: -95.4010 };
-      const results = await searchNearbyRestaurantsLive(center);
+      const results = await searchNearbyRestaurantsLive(center, searchRadiusRef.current * 1609.34);
       setRestaurants(results);
       if (results.length) {
         const ctx = { lat: center.latitude, lon: center.longitude, ts: Date.now(), results };
@@ -188,10 +251,11 @@ export default function App() {
   const totals = useMemo(() => {
     let p = 0, c = 0, f = 0;
     for (const item of menuItems ?? []) {
-      const q = itemQty[item.name] || 0;
+      const q = parseFloat(itemQty[item.name]) || 0;
       if (q) { p += item.protein * q; c += item.carbs * q; f += item.fat * q; }
     }
-    return { protein: Math.round(p), carbs: Math.round(c), fat: Math.round(f) };
+    const r = (n) => Math.round(n * 10) / 10;
+    return { protein: r(p), carbs: r(c), fat: r(f) };
   }, [menuItems, itemQty]);
 
   const matchPct = useMemo(() => {
@@ -200,6 +264,14 @@ export default function App() {
     if (!Object.values(itemQty).some(q => q > 0)) return 0;
     return Math.min(100, Math.round(calculateMatchPercentage({ protein: tP, carbs: tC, fat: tF }, totals)));
   }, [totals, targetP, targetC, targetF, itemQty]);
+
+  const rec = useMemo(() => {
+    const tP = parseFloat(targetP) || 0;
+    const tC = parseFloat(targetC) || 0;
+    const tF = parseFloat(targetF) || 0;
+    if (!tP || !menuItems) return null;
+    return getOptimalOrder({ protein: tP, carbs: tC, fat: tF }, menuItems);
+  }, [targetP, targetC, targetF, menuItems]);
 
   // ─── Pre-scan list cleaner ────────────────────────────────────────────────
   // Purges items with impossible single-serving macros or all-zero data from
@@ -323,9 +395,12 @@ export default function App() {
   };
 
   // ─── Qty helpers ──────────────────────────────────────────────────────────
-  const incQty = (name) => setItemQty(p => ({ ...p, [name]: (p[name] || 0) + 1 }));
+  const incQty = (name) => setItemQty(p => {
+    const next = Math.round(((p[name] || 0) + 0.5) * 10) / 10;
+    return { ...p, [name]: next };
+  });
   const decQty = (name) => setItemQty(p => {
-    const next = (p[name] || 0) - 1;
+    const next = Math.round(((p[name] || 0) - 0.5) * 10) / 10;
     if (next <= 0) { const n = { ...p }; delete n[name]; return n; }
     return { ...p, [name]: next };
   });
@@ -415,6 +490,26 @@ export default function App() {
             <Ionicons name="refresh-outline" size={20} color={C.accent} />
           </TouchableOpacity>
         </View>
+        <View style={s.radiusRow}>
+          <Text style={s.radiusLabel}>Radius</Text>
+          <Slider
+            style={s.radiusSlider}
+            minimumValue={0}
+            maximumValue={15}
+            step={5}
+            value={searchRadius}
+            onSlidingComplete={(val) => {
+              searchRadiusRef.current = val;
+              setSearchRadius(val);
+              setRestaurants([]);
+              loadFeed(true);
+            }}
+            minimumTrackTintColor={C.accent}
+            maximumTrackTintColor='rgba(255,255,255,0.15)'
+            thumbTintColor={C.accent}
+          />
+          <Text style={s.radiusValue}>{searchRadius} mi</Text>
+        </View>
         {feedLoading ? (
           <View style={s.center}><ActivityIndicator size="large" color={C.accent} /><Text style={s.centerTxt}>Finding restaurants nearby…</Text></View>
         ) : (
@@ -463,7 +558,7 @@ export default function App() {
       const qty    = itemQty[item.name] || 0;
       const active = qty > 0;
       const macro  = [item.protein > 0 ? `${item.protein}P` : '', item.carbs > 0 ? `${item.carbs}C` : '', item.fat > 0 ? `${item.fat}F` : ''].filter(Boolean).join(' · ');
-      const scaled = qty > 1 ? `  ×${qty} = ${Math.round(item.protein*qty)}P ${Math.round(item.carbs*qty)}C ${Math.round(item.fat*qty)}F` : '';
+      const scaled = qty > 0 && qty !== 1 ? `  ×${qty.toFixed(1)} = ${Math.round(item.protein*qty)}P ${Math.round(item.carbs*qty)}C ${Math.round(item.fat*qty)}F` : '';
       return (
         <View key={item.name} style={[s.menuRow, active && s.menuRowActive]}>
           <TouchableOpacity style={{ flex: 1, marginRight: 8 }} onPress={() => openEdit(item)} activeOpacity={0.7}>
@@ -479,7 +574,29 @@ export default function App() {
             <TouchableOpacity style={[s.stepBtn, !qty && s.stepBtnDim]} onPress={() => decQty(item.name)} hitSlop={{ top:10, bottom:10, left:10, right:6 }} activeOpacity={qty ? 0.65 : 1}>
               <Text style={[s.stepIcon, !qty && s.stepIconDim]}>−</Text>
             </TouchableOpacity>
-            <Text style={[s.stepCount, active && s.stepCountActive]}>{qty || '0'}</Text>
+            <TextInput
+              style={[s.stepCount, active && s.stepCountActive, s.stepInput]}
+              keyboardType="numeric"
+              returnKeyType="done"
+              maxLength={4}
+              selectTextOnFocus
+              value={stepDraft.name === item.name ? stepDraft.text : (qty ? qty.toFixed(1) : '0')}
+              onChangeText={(t) => {
+                // digits + one decimal point, at most one digit after the point (0.5 steps)
+                const sanitized = t.replace(/[^0-9.]/g, '').match(/^\d*\.?\d?/)?.[0] ?? '';
+                setStepDraft({ name: item.name, text: sanitized });
+              }}
+              onBlur={() => {
+                if (stepDraft.name !== item.name) return;
+                const v = parseFloat(stepDraft.text);
+                const n = isNaN(v) || v <= 0 ? 0 : Math.round(Math.min(v, 99) * 10) / 10;
+                setItemQty(p => {
+                  if (n === 0) { const r = { ...p }; delete r[item.name]; return r; }
+                  return { ...p, [item.name]: n };
+                });
+                setStepDraft({ name: null, text: '' });
+              }}
+            />
             <TouchableOpacity style={s.stepBtn} onPress={() => incQty(item.name)} hitSlop={{ top:10, bottom:10, left:6, right:10 }} activeOpacity={0.65}>
               <Text style={s.stepIcon}>+</Text>
             </TouchableOpacity>
@@ -575,6 +692,33 @@ export default function App() {
                     </View>
                   );
                 })}
+              </View>
+            )}
+            {rec && (
+              <View style={s.recCard}>
+                <View style={s.recHeaderRow}>
+                  <Ionicons name="flash" size={13} color={C.accent} />
+                  <Text style={s.recHeaderTxt}>Smart Recommendation</Text>
+                </View>
+                <Text style={s.recBody}>
+                  {'To hit your targets, we recommend:\n'}
+                  <Text style={s.recHighlight}>{rec.sentence}</Text>
+                </Text>
+                {rec.isHighOnFat && (
+                  <Text style={s.recNote}>✓ Dry rub selected — tight fat budget today</Text>
+                )}
+                <View style={s.recFooter}>
+                  <Text style={s.recMacroTxt}>
+                    ~{rec.estimatedMacros.protein}g P · {rec.estimatedMacros.carbs}g C · {rec.estimatedMacros.fat}g F
+                  </Text>
+                  <TouchableOpacity
+                    style={s.recLogBtn}
+                    onPress={() => setItemQty(rec.logQty)}
+                    activeOpacity={0.82}
+                  >
+                    <Text style={s.recLogBtnTxt}>Add to Log</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
             {renderSection('PROTEINS', proteins)}
