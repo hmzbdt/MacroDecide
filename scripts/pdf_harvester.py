@@ -214,6 +214,7 @@ def process_table(raw_df: pd.DataFrame, restaurant_prefix: str) -> list[dict]:
             "calories":       cal_i,
             "proteinDensity": protein_density,
             "isTopPick":      is_top_pick,
+            "low_priority":   prot_g < 12,
             "isAIResult":     False,
             "dataSource":     "verified",
         })
@@ -276,7 +277,8 @@ def emit_js_snippet(data: dict) -> str:
             f"{'true' if item['isMandatory'] else 'false'}, "
             f"{item['protein']}, "
             f"{item['carbs']}, "
-            f"{item['fat']}),{top_tag}"
+            f"{item['fat']}, "
+            f"{'true' if item.get('low_priority') else 'false'}),{top_tag}"
         )
     lines.append("  ],")
     return "\n".join(lines)

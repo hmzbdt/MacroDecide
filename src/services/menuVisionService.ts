@@ -15,10 +15,15 @@ const MOCK_MENU_ITEMS: RestaurantMenuItem[] = [
 ];
 // ──────────────────────────────────────────────────────────────────────────────
 
-const GEMINI_MODEL      = 'gemini-1.5-flash';
-// Stable v1 endpoint — do NOT switch to v1beta; it returns 404 for this model
-const GEMINI_VISION_URL =
-  `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`;
+// v1beta is required — v1 returns 404 for these models
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+// 3.1-pro-preview is tried first; 2.5-pro is the stable fallback if 3.1 is unavailable
+const GEMINI_MODELS   = ['gemini-3.1-pro-preview', 'gemini-2.5-pro'] as const;
+type GeminiModel = typeof GEMINI_MODELS[number];
+
+function modelUrl(model: GeminiModel): string {
+  return `${GEMINI_API_BASE}/${model}:generateContent`;
+}
 
 /** Thrown when the Gemini API returns HTTP 429 (quota exhausted). */
 export class MenuVisionRateLimitError extends Error {
@@ -27,8 +32,13 @@ export class MenuVisionRateLimitError extends Error {
 }
 
 const JSON_FORMAT_INSTRUCTION =
-  'OUTPUT ONLY VALID JSON. Do not include markdown formatting or backticks like ```json. ' +
-  'Return a raw JSON array of objects — nothing else before or after the array.';
+  'Return ONLY a raw JSON object. ' +
+  'Do not include markdown, backticks, code fences, or any introductory or closing text. ' +
+  'Your entire response must be a single valid JSON object with exactly one top-level key "items" ' +
+  'whose value is an array. ' +
+  'Limit to the 5-10 most nutritionally significant items (prioritise proteins and mains). ' +
+  'Each array element must have exactly these four keys: ' +
+  'name (string), protein (number, grams), carbs (number, grams), fat (number, grams).';
 
 function buildPrompt(restaurantName: string, existingItemNames: string[]): string {
   const dedup = existingItemNames.length > 0
@@ -36,19 +46,38 @@ function buildPrompt(restaurantName: string, existingItemNames: string[]): strin
     : '';
 
   return (
-    'You are a nutrition assistant. Extract the names and estimated macros for every item on this menu. ' +
-    'Format as a clean JSON array. If the image is blurry, do your best — do not return an error.\n\n' +
+    'You are a nutrition assistant. Analyse this menu image and estimate the macros for the key items. ' +
+    'If the image is blurry, do your best — do not return an error.\n\n' +
     `Context: the user is at ${restaurantName}.${dedup}\n\n` +
-    JSON_FORMAT_INSTRUCTION + '\n' +
-    'Each element must have exactly these keys: name, protein, carbs, fat, description.'
+    JSON_FORMAT_INSTRUCTION
   );
 }
 
-/** Strip ```json ... ``` or ``` ... ``` fences Gemini sometimes wraps around output. */
-function extractJsonText(raw: string): string {
+/**
+ * Strip conversational fluff and markdown fences, then slice to the outermost
+ * JSON boundary so a chatty model can't break the parser.
+ * Strategy: fence-strip → find first { and last } → fallback to [ … ].
+ */
+function sanitizeJsonText(raw: string): string {
+  // 1. Remove markdown code fences if present
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenced) return fenced[1].trim();
-  return raw.trim();
+  const text   = (fenced ? fenced[1] : raw).trim();
+
+  // 2. Extract outermost object { … }
+  const objStart = text.indexOf('{');
+  const objEnd   = text.lastIndexOf('}');
+  if (objStart !== -1 && objEnd > objStart) {
+    return text.slice(objStart, objEnd + 1);
+  }
+
+  // 3. Fallback: extract outermost array [ … ]
+  const arrStart = text.indexOf('[');
+  const arrEnd   = text.lastIndexOf(']');
+  if (arrStart !== -1 && arrEnd > arrStart) {
+    return text.slice(arrStart, arrEnd + 1);
+  }
+
+  return text;
 }
 
 function classifyItem(name: string): { category: RestaurantMenuItem['category']; isMandatory: boolean } {
@@ -82,70 +111,95 @@ export async function analyzeMenuImage(
     return MOCK_MENU_ITEMS;
   }
 
-  console.log('[MenuVision] Using Model:', GEMINI_MODEL);
   console.log('[MenuVision] Sending image size:', base64Image.length, 'chars');
 
-  const prompt = buildPrompt(restaurantName, existingItemNames);
+  const prompt   = buildPrompt(restaurantName, existingItemNames);
+  const reqBody  = JSON.stringify({
+    contents: [{
+      parts: [
+        { text: prompt },
+        { inline_data: { mime_type: 'image/jpeg', data: base64Image } },
+      ],
+    }],
+    generationConfig: {
+      temperature:        0.1,
+      maxOutputTokens:    4096,   // 4 k gives headroom; 5-10 items never exceeds ~800 tokens
+      response_mime_type: 'application/json',
+    },
+  });
 
-  let response: Response;
-  try {
-    response = await fetch(`${GEMINI_VISION_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inline_data: { mime_type: 'image/jpeg', data: base64Image } },
-          ],
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 2000,
-        },
-      }),
-    });
-  } catch (err) {
-    console.log('FULL_API_ERROR:', JSON.stringify(err, null, 2));
-    console.log('[MenuVision] Network error:', err);
+  let response: Response | null = null;
+  for (const model of GEMINI_MODELS) {
+    console.log('[MenuVision] Trying model:', model);
+    try {
+      response = await fetch(`${modelUrl(model)}?key=${GEMINI_API_KEY}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    reqBody,
+      });
+    } catch (err) {
+      console.log('FULL_API_ERROR:', JSON.stringify(err, null, 2));
+      console.log('[MenuVision] Network error:', err);
+      return [];
+    }
+
+    if (response.status === 404) {
+      let body = '';
+      try { body = await response.text(); } catch (_) {}
+      console.log(`[MenuVision] 404 on ${model} — trying next. Body:`, body.slice(0, 200));
+      response = null;
+      continue;
+    }
+    break; // got a non-404 response — use it
+  }
+
+  if (!response) {
+    console.log('[MenuVision] All models returned 404. Giving up.');
     return [];
   }
 
-  // Log the full status for every non-200 so we can see exact error bodies
   if (!response.ok) {
     let errorBody = '';
     try { errorBody = await response.text(); } catch (_) {}
     console.log(`FULL_API_ERROR: HTTP ${response.status} ${response.statusText}`);
     console.log('FULL_API_ERROR body:', errorBody);
-
     if (response.status === 429) {
-      // Log the raw quota error — popup suppressed during debug so actual message is visible
       console.log('[MenuVision] 429 — quota exhausted. Throwing MenuVisionRateLimitError.');
       throw new MenuVisionRateLimitError();
     }
     return [];
   }
 
+  // response.json() awaits the complete body — generateContent is non-streaming,
+  // so the full payload is buffered before we reach this line.
   const json = await response.json();
   const rawText: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-  console.log('[MenuVision] Raw response preview:', rawText.slice(0, 200));
+  console.log('[MenuVision] Raw response preview:', rawText.slice(0, 400));
 
   if (!rawText) {
     console.log('[MenuVision] Empty response from model.');
     return [];
   }
 
-  const cleanText = extractJsonText(rawText);
-  let parsed: any[] = [];
+  const cleanText = sanitizeJsonText(rawText);
+  console.log('[MenuVision] Sanitised JSON preview:', cleanText.slice(0, 400));
+  let parsed: any[] | null = null;
   try {
-    parsed = JSON.parse(cleanText);
+    const root = JSON.parse(cleanText);
+    // Expected shape: { "items": [...] }
+    // Tolerate a bare array in case the model ignores the wrapper instruction
+    if (Array.isArray(root)) {
+      parsed = root;
+    } else if (Array.isArray(root?.items)) {
+      parsed = root.items;
+    }
   } catch (e) {
     console.log('[MenuVision] JSON parse failed. Cleaned text:', cleanText.slice(0, 200));
     return [];
   }
 
-  if (!Array.isArray(parsed)) {
-    console.log('[MenuVision] Parsed result is not an array:', typeof parsed);
+  if (!parsed) {
+    console.log('[MenuVision] Response did not contain a recognisable items array.');
     return [];
   }
 

@@ -12,6 +12,7 @@ import * as ImagePicker  from 'expo-image-picker';
 import * as Location     from 'expo-location';
 
 import { calculateMatchPercentage }                          from './src/utils/engine';
+import { suggestServing, findBestItem }                      from './src/utils/macroMath';
 import MatchRing                                             from './src/components/MatchRing';
 import { getCurrentLocation, searchNearbyRestaurantsLive }  from './src/services/proximityService';
 import { analyzeMenuImage, MenuVisionRateLimitError }        from './src/services/menuVisionService';
@@ -23,6 +24,7 @@ import Slider                                                from '@react-native
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CACHE_PREFIX   = 'menu_v2_';
+const UPL_PREFIX     = 'user_upload_v1_';
 const CACHE_TTL_MS   = 7 * 24 * 60 * 60 * 1000;
 const GEO_RADIUS_M   = 200;
 const SEARCH_CTX_KEY = '@md_search_ctx';
@@ -144,9 +146,10 @@ export default function App() {
   const [stepDraft,    setStepDraft]    = useState({ name: null, text: '' });
 
   // ── Detail: OCR scan ──────────────────────────────────────────────────────
-  const [ocrItems,    setOcrItems]    = useState([]);
-  const [ocrLoading,  setOcrLoading]  = useState(false);
-  const [verifiedIds, setVerifiedIds] = useState(new Set());
+  const [ocrItems,      setOcrItems]      = useState([]);
+  const [ocrLoading,    setOcrLoading]    = useState(false);
+  const [verifiedIds,   setVerifiedIds]   = useState(new Set());
+  const [activeMenuTab, setActiveMenuTab] = useState('official');
 
   // ── Detail: inline macro edit modal ──────────────────────────────────────
   const [editItem, setEditItem] = useState(null);
@@ -203,9 +206,10 @@ export default function App() {
     setSelAddress(r.address ?? '');
     setSelCoords(r.latitude != null ? { latitude: r.latitude, longitude: r.longitude } : null);
     selPlaceId.current = r.placeId ?? '';
-    setMenuItems([]);  // Flush any stale FatSecret/cached data immediately on entry
+    setMenuItems([]);
     setItemQty({}); setOcrItems([]); setVerifiedIds(new Set());
     setMenuFromCache(false);
+    setActiveMenuTab('official');
     setView('detail');
   };
 
@@ -247,16 +251,28 @@ export default function App() {
     return () => { cancelled = true; };
   }, [view, selName]);
 
+  // ─── Load persisted User Uploaded items ──────────────────────────────────
+  useEffect(() => {
+    if (view !== 'detail' || !selName) return;
+    AsyncStorage.getItem(`${UPL_PREFIX}${selName}`)
+      .then(raw => {
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (Array.isArray(saved) && saved.length) setOcrItems(saved);
+      })
+      .catch(() => {});
+  }, [view, selName]);
+
   // ─── Derived: totals + match % ────────────────────────────────────────────
   const totals = useMemo(() => {
     let p = 0, c = 0, f = 0;
-    for (const item of menuItems ?? []) {
+    for (const item of [...(menuItems ?? []), ...ocrItems]) {
       const q = parseFloat(itemQty[item.name]) || 0;
       if (q) { p += item.protein * q; c += item.carbs * q; f += item.fat * q; }
     }
     const r = (n) => Math.round(n * 10) / 10;
     return { protein: r(p), carbs: r(c), fat: r(f) };
-  }, [menuItems, itemQty]);
+  }, [menuItems, ocrItems, itemQty]);
 
   const matchPct = useMemo(() => {
     const tP = parseFloat(targetP) || 0, tC = parseFloat(targetC) || 0, tF = parseFloat(targetF) || 0;
@@ -272,6 +288,42 @@ export default function App() {
     if (!tP || !menuItems) return null;
     return getOptimalOrder({ protein: tP, carbs: tC, fat: tF }, menuItems);
   }, [targetP, targetC, targetF, menuItems]);
+
+  const instructionBanner = useMemo(() => {
+    const tPv = parseFloat(targetP) || 0;
+    const tCv = parseFloat(targetC) || 0;
+    const tFv = parseFloat(targetF) || 0;
+    if (!tPv || !menuItems?.length) return null;
+    const proteins = menuItems.filter(i => i.category === 'protein' && i.protein > 0);
+    if (!proteins.length) return null;
+    const best = findBestItem({ protein: tPv, carbs: tCv, fat: tFv }, proteins);
+    if (!best) return null;
+    const { item, sug, density } = best;
+    const isWarning = !!sug.limitedBy;
+    const isPerfect = !isWarning && density >= 15;
+    const text = isWarning
+      ? `Eat ${sug.servings.toFixed(1)} servings of ${item.name}, but watch your ${sug.limitedBy} cap.`
+      : `You should eat ${sug.servings.toFixed(1)} servings of ${item.name} to best match your remaining macros.`;
+    return { text, isWarning, isPerfect, projP: sug.projP, projC: sug.projC, projF: sug.projF, item, sug };
+  }, [targetP, targetC, targetF, menuItems]);
+
+  const uploadedBanner = useMemo(() => {
+    const tPv = parseFloat(targetP) || 0;
+    const tCv = parseFloat(targetC) || 0;
+    const tFv = parseFloat(targetF) || 0;
+    if (!tPv || !ocrItems?.length) return null;
+    const proteins = ocrItems.filter(i => i.category === 'protein' && i.protein > 0);
+    if (!proteins.length) return null;
+    const best = findBestItem({ protein: tPv, carbs: tCv, fat: tFv }, proteins);
+    if (!best) return null;
+    const { item, sug, density } = best;
+    const isWarning = !!sug.limitedBy;
+    const isPerfect = !isWarning && density >= 15;
+    const text = isWarning
+      ? `Eat ${sug.servings.toFixed(1)} servings of ${item.name}, but watch your ${sug.limitedBy} cap.`
+      : `You should eat ${sug.servings.toFixed(1)} servings of ${item.name} to best match your remaining macros.`;
+    return { text, isWarning, isPerfect, projP: sug.projP, projC: sug.projC, projF: sug.projF, item, sug };
+  }, [targetP, targetC, targetF, ocrItems]);
 
   // ─── Pre-scan list cleaner ────────────────────────────────────────────────
   // Purges items with impossible single-serving macros or all-zero data from
@@ -292,29 +344,24 @@ export default function App() {
   // GEOFENCE DISABLED — testing from home (re-enable GEO_RADIUS_M check before ship)
   const runOcr = useCallback(async (base64, _photoCoords) => {
     const doScan = async () => {
-      // Purge stale FatSecret/cached data so scan results are the source of truth
-      setMenuItems([]);
-
-      // Clean impossible macro items before building the dedup list
-      const cleanItems = cleanMenuItems(menuItems ?? []);
-
       setOcrItems([]); setOcrLoading(true);
       try {
-        const existing = cleanItems.map(i => i.name);
+        const existing = ocrItems.map(i => i.name);
         const items    = await analyzeMenuImage(base64, selName, existing);
         if (!items.length) Alert.alert('Scan Failed', "Couldn't find items. Try a clearer photo.");
-        else setOcrItems(items);
+        else {
+          setOcrItems(items);
+          setActiveMenuTab('uploaded');
+          AsyncStorage.setItem(`${UPL_PREFIX}${selName}`, JSON.stringify(items)).catch(() => {});
+        }
       } catch (err) {
         console.log('FULL_API_ERROR:', JSON.stringify(err, null, 2));
-        // Raw error message from Google — no custom wrappers so the real response is visible
         Alert.alert('Scan Error', err?.message ?? JSON.stringify(err));
       } finally { setOcrLoading(false); }
     };
 
-    // Geofence bypass — home testing in Spring, TX
-    // const isVerified = true; // TODO: replace with real haversine check pre-ship
     await doScan();
-  }, [menuItems, selName]);
+  }, [ocrItems, selName]);
 
   const pickAndScan = async (source) => {
     let base64 = null, coords = null;
@@ -382,15 +429,22 @@ export default function App() {
     const p = Math.max(0, Math.round(parseFloat(editP) || 0));
     const c = Math.max(0, Math.round(parseFloat(editC) || 0));
     const f = Math.max(0, Math.round(parseFloat(editF) || 0));
-    const cacheKey = `${CACHE_PREFIX}${selPlaceId.current || selName}`;
-    setMenuItems(prev => {
-      if (!prev) return prev;
-      const updated = prev.map(it => it.name === editItem.name
-        ? { ...it, name: editName.trim() || it.name, protein: p, carbs: c, fat: f, dataSource: 'userCorrected' }
-        : it);
-      cacheWrite(cacheKey, updated);
-      return updated;
-    });
+    const patch = { name: editName.trim() || editItem.name, protein: p, carbs: c, fat: f, dataSource: 'userCorrected' };
+    if (ocrItems.some(it => it.name === editItem.name)) {
+      setOcrItems(prev => {
+        const updated = prev.map(it => it.name === editItem.name ? { ...it, ...patch } : it);
+        AsyncStorage.setItem(`${UPL_PREFIX}${selName}`, JSON.stringify(updated)).catch(() => {});
+        return updated;
+      });
+    } else {
+      const cacheKey = `${CACHE_PREFIX}${selPlaceId.current || selName}`;
+      setMenuItems(prev => {
+        if (!prev) return prev;
+        const updated = prev.map(it => it.name === editItem.name ? { ...it, ...patch } : it);
+        cacheWrite(cacheKey, updated);
+        return updated;
+      });
+    }
     setEditItem(null);
   };
 
@@ -548,9 +602,13 @@ export default function App() {
   if (view === 'detail') {
     const tP = parseFloat(targetP)||0, tC = parseFloat(targetC)||0, tF = parseFloat(targetF)||0;
     const items     = menuItems ?? [];
-    const proteins  = items.filter(i => i.category === 'protein');
-    const bases     = items.filter(i => i.category === 'base');
-    const addons    = items.filter(i => i.category === 'addon');
+    const densityOf = i => { const c = i.protein * 4 + (i.carbs || 0) * 4 + (i.fat || 0) * 9; return c > 0 ? i.protein / c : 0; };
+    const pinnedName = instructionBanner?.item?.name;
+    const proteins  = items.filter(i => i.category === 'protein' && i.name !== pinnedName).sort((a, b) => densityOf(b) - densityOf(a));
+    const bases     = items.filter(i => i.category === 'base').sort((a, b) => densityOf(b) - densityOf(a));
+    const addons    = items.filter(i => i.category === 'addon').sort((a, b) => densityOf(b) - densityOf(a));
+    const uploadedPinnedName  = uploadedBanner?.item?.name;
+    const uploadedItemsSorted = ocrItems.filter(i => i.name !== uploadedPinnedName).sort((a, b) => densityOf(b) - densityOf(a));
     const hasMenu   = items.length > 0 || ocrItems.length > 0;
     const hasSelect = Object.values(itemQty).some(q => q > 0);
 
@@ -559,17 +617,45 @@ export default function App() {
       const active = qty > 0;
       const macro  = [item.protein > 0 ? `${item.protein}P` : '', item.carbs > 0 ? `${item.carbs}C` : '', item.fat > 0 ? `${item.fat}F` : ''].filter(Boolean).join(' · ');
       const scaled = qty > 0 && qty !== 1 ? `  ×${qty.toFixed(1)} = ${Math.round(item.protein*qty)}P ${Math.round(item.carbs*qty)}C ${Math.round(item.fat*qty)}F` : '';
+
+      const itemCal = item.protein * 4 + (item.carbs || 0) * 4 + (item.fat || 0) * 9;
+      const densityPct = itemCal > 0 ? Math.round((item.protein / itemCal) * 100) : 0;
+
+      const sug = tP > 0 ? suggestServing(item, { protein: tP, carbs: tC, fat: tF }) : null;
+      const chipStyle = sug?.limitedBy
+        ? { borderColor: 'rgba(255,183,77,0.35)', backgroundColor: 'rgba(255,183,77,0.1)' }
+        : { borderColor: 'rgba(0,121,107,0.4)',   backgroundColor: 'rgba(0,121,107,0.1)' };
+      const chipColor = sug?.limitedBy ? '#ffb74d' : '#00796b';
+      const chipText  = sug
+        ? sug.limitedBy
+          ? `⚠ ×${sug.servings.toFixed(1)} (${sug.limitedBy} cap) → ${sug.projP}g P`
+          : `⚡ ×${sug.servings.toFixed(1)} hits ${sug.projP}g P`
+        : null;
+
       return (
         <View key={item.name} style={[s.menuRow, active && s.menuRowActive]}>
-          <TouchableOpacity style={{ flex: 1, marginRight: 8 }} onPress={() => openEdit(item)} activeOpacity={0.7}>
-            <Text style={[s.menuName, active && s.menuNameActive]}>{item.name}</Text>
-            <View style={s.pillRow}>
-              <View style={s.pill}><Text style={s.pillTxt}>{macro}{scaled}</Text></View>
-              {item.dataSource === 'verified' && <View style={s.tagOfficial}><Text style={s.tagOfficialTxt}>★ OFFICIAL</Text></View>}
-              {item.isAIResult && item.dataSource !== 'userCorrected' && <View style={s.tagAI}><Text style={s.tagAITxt}>✨ AI</Text></View>}
-              {item.dataSource === 'userCorrected' && <View style={s.tagEdited}><Text style={s.tagEditedTxt}>✏️ Edited</Text></View>}
-            </View>
-          </TouchableOpacity>
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <TouchableOpacity onPress={() => openEdit(item)} activeOpacity={0.7}>
+              <Text style={[s.menuName, active && s.menuNameActive]}>{item.name}</Text>
+              <View style={s.pillRow}>
+                <View style={s.pill}><Text style={s.pillTxt}>{macro}{scaled}</Text></View>
+                {item.dataSource === 'verified' && <View style={s.tagOfficial}><Text style={s.tagOfficialTxt}>★ OFFICIAL</Text></View>}
+                {item.isAIResult && item.dataSource !== 'userCorrected' && <View style={s.tagAI}><Text style={s.tagAITxt}>✨ AI</Text></View>}
+                {item.dataSource === 'userCorrected' && <View style={s.tagEdited}><Text style={s.tagEditedTxt}>✏️ Edited</Text></View>}
+                {densityPct > 0 && <View style={s.densityBadge}><Text style={s.densityBadgeTxt}>{densityPct}% P</Text></View>}
+              </View>
+            </TouchableOpacity>
+            {chipText && (
+              <TouchableOpacity
+                style={[s.coachChip, chipStyle]}
+                onPress={() => setItemQty(p => ({ ...p, [item.name]: sug.servings }))}
+                activeOpacity={0.75}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Text style={[s.coachChipTxt, { color: chipColor }]}>{chipText}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           <View style={s.stepRow}>
             <TouchableOpacity style={[s.stepBtn, !qty && s.stepBtnDim]} onPress={() => decQty(item.name)} hitSlop={{ top:10, bottom:10, left:10, right:6 }} activeOpacity={qty ? 0.65 : 1}>
               <Text style={[s.stepIcon, !qty && s.stepIconDim]}>−</Text>
@@ -582,7 +668,6 @@ export default function App() {
               selectTextOnFocus
               value={stepDraft.name === item.name ? stepDraft.text : (qty ? qty.toFixed(1) : '0')}
               onChangeText={(t) => {
-                // digits + one decimal point, at most one digit after the point (0.5 steps)
                 const sanitized = t.replace(/[^0-9.]/g, '').match(/^\d*\.?\d?/)?.[0] ?? '';
                 setStepDraft({ name: item.name, text: sanitized });
               }}
@@ -669,63 +754,183 @@ export default function App() {
         ) : selName === 'Chipotle' ? (
           <ChipotleBuilder menuItems={items} itemQty={itemQty} onInc={incQty} onDec={decQty} />
         ) : (
-          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-            {ocrItems.length > 0 && (
-              <View style={s.section}>
-                <Text style={s.sectionLabel}>✨ SCANNED — TAP VERIFY TO SAVE</Text>
-                {ocrItems.map(item => {
-                  const isVfd  = verifiedIds.has(item.id);
-                  const macro  = [item.protein > 0 ? `${item.protein}P` : '', item.carbs > 0 ? `${item.carbs}C` : '', item.fat > 0 ? `${item.fat}F` : ''].filter(Boolean).join(' · ');
-                  return (
-                    <View key={item.id} style={[s.menuRow, isVfd && s.menuRowActive]}>
-                      <View style={{ flex: 1, marginRight: 8 }}>
-                        <Text style={[s.menuName, isVfd && s.menuNameActive]}>{item.name}</Text>
-                        <View style={s.pillRow}>
-                          <View style={s.pill}><Text style={s.pillTxt}>{macro}</Text></View>
-                          {!isVfd && <View style={s.tagAI}><Text style={s.tagAITxt}>Draft</Text></View>}
-                        </View>
-                      </View>
-                      {isVfd
-                        ? <Text style={{ fontSize: 20 }}>✅</Text>
-                        : <TouchableOpacity style={s.verifyBtn} onPress={() => verifyOcrItem(item)} activeOpacity={0.75}><Text style={s.verifyBtnTxt}>Verify ✓</Text></TouchableOpacity>
-                      }
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-            {rec && (
-              <View style={s.recCard}>
-                <View style={s.recHeaderRow}>
-                  <Ionicons name="flash" size={13} color={C.accent} />
-                  <Text style={s.recHeaderTxt}>Smart Recommendation</Text>
-                </View>
-                <Text style={s.recBody}>
-                  {'To hit your targets, we recommend:\n'}
-                  <Text style={s.recHighlight}>{rec.sentence}</Text>
+          <>
+            <View style={s.tabBar}>
+              <TouchableOpacity style={[s.tabBtn, activeMenuTab === 'official' && s.tabBtnActive]} onPress={() => setActiveMenuTab('official')} activeOpacity={0.8}>
+                <Text style={[s.tabBtnTxt, activeMenuTab === 'official' && s.tabBtnTxtActive]}>Official Items</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.tabBtn, activeMenuTab === 'uploaded' && s.tabBtnActive]} onPress={() => setActiveMenuTab('uploaded')} activeOpacity={0.8}>
+                <Text style={[s.tabBtnTxt, activeMenuTab === 'uploaded' && s.tabBtnTxtActive]}>
+                  {`User Uploaded${ocrItems.length > 0 ? ` (${ocrItems.length})` : ''}`}
                 </Text>
-                {rec.isHighOnFat && (
-                  <Text style={s.recNote}>✓ Dry rub selected — tight fat budget today</Text>
+              </TouchableOpacity>
+            </View>
+            {activeMenuTab === 'official' ? (
+              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+                {instructionBanner && (
+                  <View style={[
+                    s.recCard,
+                    { borderLeftWidth: 4 },
+                    instructionBanner.isWarning
+                      ? { backgroundColor: 'rgba(255,183,77,0.08)', borderColor: 'rgba(255,183,77,0.25)', borderLeftColor: '#ffb74d' }
+                      : { borderLeftColor: instructionBanner.isPerfect ? '#00e676' : C.accent },
+                  ]}>
+                    <View style={s.recHeaderRow}>
+                      <Ionicons
+                        name={instructionBanner.isWarning ? 'warning-outline' : 'flash'}
+                        size={13}
+                        color={instructionBanner.isWarning ? '#ffb74d' : instructionBanner.isPerfect ? '#00e676' : C.accent}
+                      />
+                      <Text style={[s.recHeaderTxt,
+                        instructionBanner.isWarning && { color: '#ffb74d' },
+                        instructionBanner.isPerfect && { color: '#00e676' },
+                      ]}>
+                        {instructionBanner.isWarning ? 'Cap Warning' : instructionBanner.isPerfect ? 'Perfect Match' : 'Smart Suggestion'}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 }}>
+                      <Text style={{
+                        flex: 1, fontSize: 15, fontWeight: '800', lineHeight: 22, marginRight: 10,
+                        color: instructionBanner.isWarning ? '#ffb74d' : instructionBanner.isPerfect ? '#00e676' : '#00796b',
+                      }}>
+                        {instructionBanner.text}
+                      </Text>
+                      <TouchableOpacity
+                        style={[s.recLogBtn, { alignSelf: 'flex-start' }, instructionBanner.isWarning && { backgroundColor: '#d4860a' }]}
+                        onPress={() => setItemQty(p => ({ ...p, [instructionBanner.item.name]: instructionBanner.sug.servings }))}
+                        activeOpacity={0.82}
+                      >
+                        <Text style={s.recLogBtnTxt}>Apply Suggestion</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={s.recMacroTxt}>
+                      ~{instructionBanner.projP}g P · {instructionBanner.projC}g C · {instructionBanner.projF}g F
+                    </Text>
+                  </View>
                 )}
-                <View style={s.recFooter}>
-                  <Text style={s.recMacroTxt}>
-                    ~{rec.estimatedMacros.protein}g P · {rec.estimatedMacros.carbs}g C · {rec.estimatedMacros.fat}g F
-                  </Text>
-                  <TouchableOpacity
-                    style={s.recLogBtn}
-                    onPress={() => setItemQty(rec.logQty)}
-                    activeOpacity={0.82}
-                  >
-                    <Text style={s.recLogBtnTxt}>Add to Log</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+                {instructionBanner && (
+                  <View style={s.section}>
+                    <Text style={[s.sectionLabel, {
+                      color: instructionBanner.isWarning ? '#ffb74d' : instructionBanner.isPerfect ? '#00e676' : C.accent,
+                    }]}>
+                      {instructionBanner.isWarning ? '⚠ Recommended For You' : '⚡ Recommended For You'}
+                    </Text>
+                    {renderItem(instructionBanner.item)}
+                  </View>
+                )}
+                {rec && (
+                  <View style={s.recCard}>
+                    <View style={s.recHeaderRow}>
+                      <Ionicons name="flash" size={13} color={C.accent} />
+                      <Text style={s.recHeaderTxt}>Smart Recommendation</Text>
+                    </View>
+                    <Text style={s.recBody}>
+                      {'To hit your targets, we recommend:\n'}
+                      <Text style={s.recHighlight}>{rec.sentence}</Text>
+                    </Text>
+                    {rec.isHighOnFat && (
+                      <Text style={s.recNote}>✓ Dry rub selected — tight fat budget today</Text>
+                    )}
+                    <View style={s.recFooter}>
+                      <Text style={s.recMacroTxt}>
+                        ~{rec.estimatedMacros.protein}g P · {rec.estimatedMacros.carbs}g C · {rec.estimatedMacros.fat}g F
+                      </Text>
+                      <TouchableOpacity
+                        style={s.recLogBtn}
+                        onPress={() => setItemQty(rec.logQty)}
+                        activeOpacity={0.82}
+                      >
+                        <Text style={s.recLogBtnTxt}>Add to Log</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+                {items.length === 0 && (
+                  <View style={[s.center, { marginTop: 24 }]}>
+                    <Text style={s.centerTxt}>{'No official menu data.\nUse "User Uploaded" to add items via scan.'}</Text>
+                  </View>
+                )}
+                {renderSection('PROTEINS', proteins)}
+                {renderSection('BASES',    bases)}
+                {renderSection('ADD-ONS',  addons)}
+                <View style={{ height: 120 }} />
+              </ScrollView>
+            ) : (
+              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+                {ocrLoading ? (
+                  <View style={[s.center, { marginTop: 40 }]}>
+                    <ActivityIndicator size="large" color={C.accent} />
+                    <Text style={s.centerTxt}>Analyzing menu photo…</Text>
+                  </View>
+                ) : ocrItems.length === 0 ? (
+                  <View style={s.center}>
+                    <Ionicons name="cloud-upload-outline" size={48} color={C.muted} />
+                    <Text style={[s.emptyTitle, { marginTop: 8 }]}>No Uploaded Items</Text>
+                    <Text style={s.emptySub}>{'Tap "Scan Physical Menu" above to add items.'}</Text>
+                  </View>
+                ) : (
+                  <>
+                    {uploadedBanner && (
+                      <View style={[
+                        s.recCard,
+                        { borderLeftWidth: 4 },
+                        uploadedBanner.isWarning
+                          ? { backgroundColor: 'rgba(255,183,77,0.08)', borderColor: 'rgba(255,183,77,0.25)', borderLeftColor: '#ffb74d' }
+                          : { borderLeftColor: uploadedBanner.isPerfect ? '#00e676' : C.accent },
+                      ]}>
+                        <View style={s.recHeaderRow}>
+                          <Ionicons
+                            name={uploadedBanner.isWarning ? 'warning-outline' : 'flash'}
+                            size={13}
+                            color={uploadedBanner.isWarning ? '#ffb74d' : uploadedBanner.isPerfect ? '#00e676' : C.accent}
+                          />
+                          <Text style={[s.recHeaderTxt,
+                            uploadedBanner.isWarning && { color: '#ffb74d' },
+                            uploadedBanner.isPerfect && { color: '#00e676' },
+                          ]}>
+                            {uploadedBanner.isWarning ? 'Cap Warning' : uploadedBanner.isPerfect ? 'Perfect Match' : 'Smart Suggestion'}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 }}>
+                          <Text style={{
+                            flex: 1, fontSize: 15, fontWeight: '800', lineHeight: 22, marginRight: 10,
+                            color: uploadedBanner.isWarning ? '#ffb74d' : uploadedBanner.isPerfect ? '#00e676' : '#00796b',
+                          }}>
+                            {uploadedBanner.text}
+                          </Text>
+                          <TouchableOpacity
+                            style={[s.recLogBtn, { alignSelf: 'flex-start' }, uploadedBanner.isWarning && { backgroundColor: '#d4860a' }]}
+                            onPress={() => setItemQty(p => ({ ...p, [uploadedBanner.item.name]: uploadedBanner.sug.servings }))}
+                            activeOpacity={0.82}
+                          >
+                            <Text style={s.recLogBtnTxt}>Apply Suggestion</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <Text style={s.recMacroTxt}>
+                          ~{uploadedBanner.projP}g P · {uploadedBanner.projC}g C · {uploadedBanner.projF}g F
+                        </Text>
+                      </View>
+                    )}
+                    {uploadedBanner && (
+                      <View style={s.section}>
+                        <Text style={[s.sectionLabel, {
+                          color: uploadedBanner.isWarning ? '#ffb74d' : uploadedBanner.isPerfect ? '#00e676' : C.accent,
+                        }]}>
+                          {uploadedBanner.isWarning ? '⚠ Recommended For You' : '⚡ Recommended For You'}
+                        </Text>
+                        {renderItem(uploadedBanner.item)}
+                      </View>
+                    )}
+                    <View style={s.section}>
+                      <Text style={s.sectionLabel}>✨ All Scanned Items</Text>
+                      {uploadedItemsSorted.map(renderItem)}
+                    </View>
+                  </>
+                )}
+                <View style={{ height: 120 }} />
+              </ScrollView>
             )}
-            {renderSection('PROTEINS', proteins)}
-            {renderSection('BASES',    bases)}
-            {renderSection('ADD-ONS',  addons)}
-            <View style={{ height: 120 }} />
-          </ScrollView>
+          </>
         )}
 
         {/* Confirm */}

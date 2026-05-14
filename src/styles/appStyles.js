@@ -100,6 +100,21 @@ export const s = StyleSheet.create({
   verifyBtn:       { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(0,121,107,0.5)' },
   verifyBtnTxt:    { fontSize: 12, fontWeight: '700', color: C.accent },
 
+  // ── Tab bar ───────────────────────────────────────────────────────────────
+  tabBar:          { flexDirection: 'row', marginHorizontal: 14, marginTop: 10, marginBottom: 2, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.05)', padding: 3 },
+  tabBtn:          { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 8 },
+  tabBtnActive:    { backgroundColor: C.card },
+  tabBtnTxt:       { fontSize: 12, fontWeight: '600', color: C.muted, letterSpacing: 0.2 },
+  tabBtnTxtActive: { color: C.white },
+
+  // ── Protein density badge ─────────────────────────────────────────────────
+  densityBadge:    { backgroundColor: 'rgba(0,121,107,0.2)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  densityBadgeTxt: { fontSize: 10, fontWeight: '700', color: C.accent, letterSpacing: 0.2 },
+
+  // ── Coach chip (per-item serving suggestion) ─────────────────────────────
+  coachChip:    { flexDirection: 'row', alignItems: 'center', marginTop: 6, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, alignSelf: 'flex-start', borderWidth: 1 },
+  coachChipTxt: { fontSize: 10, fontWeight: '600', letterSpacing: 0.1 },
+
   // ── Steppers ──────────────────────────────────────────────────────────────
   stepRow:         { flexDirection: 'row', alignItems: 'center', gap: 4 },
   stepBtn:         { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8 },
