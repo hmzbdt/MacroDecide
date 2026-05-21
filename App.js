@@ -16,6 +16,7 @@ import { suggestServing, findBestItem }                      from './src/utils/m
 import MatchRing                                             from './src/components/MatchRing';
 import { getCurrentLocation, searchNearbyRestaurantsLive }  from './src/services/proximityService';
 import { analyzeMenuImage, MenuVisionRateLimitError }        from './src/services/menuVisionService';
+import { submitMenuToCommunity }                             from './src/services/communityService';
 import { RESTAURANT_DB }                                     from './src/data/restaurantDB';
 import { VERIFIED_MENUS }                                    from './src/data/verifiedMenus';
 import ChipotleBuilder                                       from './src/components/ChipotleBuilder';
@@ -28,6 +29,7 @@ const UPL_PREFIX     = 'user_upload_v1_';
 const CACHE_TTL_MS   = 7 * 24 * 60 * 60 * 1000;
 const GEO_RADIUS_M   = 200;
 const SEARCH_CTX_KEY = '@md_search_ctx';
+const HISTORY_KEY    = '@md_meal_history_v1';
 
 // Merged lookup for feed bestPct (VERIFIED_MENUS takes precedence over RESTAURANT_DB)
 const COMBINED_MENUS = { ...RESTAURANT_DB, ...VERIFIED_MENUS };
@@ -114,6 +116,60 @@ function getOptimalOrder(targets, items) {
   };
 }
 
+function formatHistoryDate(ts) {
+  const d = new Date(ts);
+  const mon = d.toLocaleString('default', { month: 'short' });
+  const h = d.getHours(), m = d.getMinutes().toString().padStart(2, '0');
+  return `${mon} ${d.getDate()}, ${h % 12 || 12}:${m} ${h >= 12 ? 'PM' : 'AM'}`;
+}
+
+// ─── Meal history grouping ────────────────────────────────────────────────────
+const SESSION_GAP_MS = 45 * 60 * 1000;
+
+function getDayKey(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getRelativeDayLabel(ts) {
+  const d   = new Date(ts);
+  const now = new Date();
+  const dDay = new Date(d.getFullYear(),   d.getMonth(),   d.getDate());
+  const nDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.round((nDay - dDay) / 86_400_000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return d.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+}
+
+function groupByDayAndRestaurant(entries) {
+  if (!entries.length) return [];
+  const sorted = [...entries].sort((a, b) => a.timestamp - b.timestamp);
+  const trips = [];
+  let cur = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const timeDiff = sorted[i].timestamp - sorted[i - 1].timestamp;
+    const sameRest = sorted[i].restaurant === sorted[i - 1].restaurant;
+    if (timeDiff <= SESSION_GAP_MS && sameRest) {
+      cur.push(sorted[i]);
+    } else {
+      trips.push(cur);
+      cur = [sorted[i]];
+    }
+  }
+  trips.push(cur);
+  const dayMap = new Map();
+  for (const trip of trips) {
+    const key = getDayKey(trip[0].timestamp);
+    const label = getRelativeDayLabel(trip[0].timestamp);
+    if (!dayMap.has(key)) dayMap.set(key, { label, trips: [] });
+    dayMap.get(key).trips.push(trip);
+  }
+  return [...dayMap.entries()]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([, v]) => ({ dayLabel: v.label, trips: v.trips.reverse() }));
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default function App() {
 
@@ -128,7 +184,9 @@ export default function App() {
   // ── Feed ──────────────────────────────────────────────────────────────────
   const [restaurants,   setRestaurants]   = useState([]);
   const [feedLoading,   setFeedLoading]   = useState(false);
-  const [searchRadius,  setSearchRadius]  = useState(5);
+  const [searchRadius,  setSearchRadius]  = useState(0);
+  const [feedMode,      setFeedMode]      = useState('near_me');
+  const [feedQuery,     setFeedQuery]     = useState('');
   const searchCtxRef   = useRef(null);
   const searchRadiusRef = useRef(5);
 
@@ -148,8 +206,24 @@ export default function App() {
   // ── Detail: OCR scan ──────────────────────────────────────────────────────
   const [ocrItems,      setOcrItems]      = useState([]);
   const [ocrLoading,    setOcrLoading]    = useState(false);
+  const [ocrFromCache,  setOcrFromCache]  = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [submitRestName,  setSubmitRestName]  = useState('');
+  const [submitAddr,      setSubmitAddr]      = useState('');
+  const [submitStatus,    setSubmitStatus]    = useState('idle');
+  const [submitError,     setSubmitError]     = useState('');
   const [verifiedIds,   setVerifiedIds]   = useState(new Set());
   const [activeMenuTab, setActiveMenuTab] = useState('official');
+
+  // ── Meal history ──────────────────────────────────────────────────────────
+  const [mealHistory, setMealHistory] = useState([]);
+  const [expandedMealIds, setExpandedMealIds] = useState(new Set());
+
+  const toggleMealExpand = (id) => setExpandedMealIds(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   // ── Detail: inline macro edit modal ──────────────────────────────────────
   const [editItem, setEditItem] = useState(null);
@@ -162,6 +236,13 @@ export default function App() {
   useEffect(() => {
     AsyncStorage.getItem(SEARCH_CTX_KEY)
       .then(raw => { if (raw) searchCtxRef.current = JSON.parse(raw); })
+      .catch(() => {});
+  }, []);
+
+  // ─── Load meal history on mount ───────────────────────────────────────────
+  useEffect(() => {
+    AsyncStorage.getItem(HISTORY_KEY)
+      .then(raw => { if (raw) setMealHistory(JSON.parse(raw)); })
       .catch(() => {});
   }, []);
 
@@ -254,11 +335,15 @@ export default function App() {
   // ─── Load persisted User Uploaded items ──────────────────────────────────
   useEffect(() => {
     if (view !== 'detail' || !selName) return;
+    setOcrFromCache(false);
     AsyncStorage.getItem(`${UPL_PREFIX}${selName}`)
       .then(raw => {
         if (!raw) return;
         const saved = JSON.parse(raw);
-        if (Array.isArray(saved) && saved.length) setOcrItems(saved);
+        if (Array.isArray(saved) && saved.length) {
+          setOcrItems(saved);
+          setOcrFromCache(true);
+        }
       })
       .catch(() => {});
   }, [view, selName]);
@@ -344,7 +429,7 @@ export default function App() {
   // GEOFENCE DISABLED — testing from home (re-enable GEO_RADIUS_M check before ship)
   const runOcr = useCallback(async (base64, _photoCoords) => {
     const doScan = async () => {
-      setOcrItems([]); setOcrLoading(true);
+      setOcrItems([]); setOcrLoading(true); setOcrFromCache(false);
       try {
         const existing = ocrItems.map(i => i.name);
         const items    = await analyzeMenuImage(base64, selName, existing);
@@ -409,6 +494,35 @@ export default function App() {
     { text: 'Cancel',              style: 'cancel' },
   ]);
 
+  const clearOcrCache = () => {
+    AsyncStorage.removeItem(`${UPL_PREFIX}${selName}`).catch(() => {});
+    setOcrItems([]);
+    setOcrFromCache(false);
+    promptScan();
+  };
+
+  const openSubmitModal = () => {
+    setSubmitRestName(selName);
+    setSubmitAddr(selAddress);
+    setSubmitStatus('idle');
+    setSubmitError('');
+    setShowSubmitModal(true);
+  };
+
+  const handleSubmitToDb = async () => {
+    if (!submitRestName.trim()) { setSubmitError('Restaurant name is required.'); return; }
+    if (!submitAddr.trim())     { setSubmitError('Address is required.'); return; }
+    setSubmitStatus('loading');
+    setSubmitError('');
+    try {
+      await submitMenuToCommunity({ restaurantName: submitRestName, address: submitAddr, items: ocrItems });
+      setSubmitStatus('success');
+    } catch (err) {
+      setSubmitStatus('error');
+      setSubmitError(err?.message ?? 'Submission failed. Please try again.');
+    }
+  };
+
   // ─── Verify OCR item → merge into main list + cache ──────────────────────
   const verifyOcrItem = useCallback(async (item) => {
     const cacheKey = `${CACHE_PREFIX}${selPlaceId.current || selName}`;
@@ -459,6 +573,48 @@ export default function App() {
     return { ...p, [name]: next };
   });
 
+  // ─── History: confirm & delete ────────────────────────────────────────────
+  const confirmMeal = useCallback(async () => {
+    const allItems = [...(menuItems ?? []), ...ocrItems];
+    const newEntries = allItems.reduce((acc, item) => {
+      const qty = parseFloat(itemQty[item.name]) || 0;
+      if (qty <= 0) return acc;
+      acc.push({
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        timestamp: Date.now(),
+        restaurant: selName,
+        itemName:   item.name,
+        qty,
+        protein: item.protein ?? 0,
+        carbs:   item.carbs   ?? 0,
+        fat:     item.fat     ?? 0,
+        source:  ocrItems.some(o => o.name === item.name) ? 'uploaded' : 'official',
+      });
+      return acc;
+    }, []);
+    if (!newEntries.length) return;
+    const updated = [...newEntries, ...mealHistory];
+    setMealHistory(updated);
+    AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated)).catch(() => {});
+    setView('home');
+  }, [menuItems, ocrItems, itemQty, selName, mealHistory]);
+
+  const deleteHistoryEntry = useCallback((id) => {
+    Alert.alert('Delete Entry', 'Remove this meal from history?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: () => {
+          setMealHistory(prev => {
+            const updated = prev.filter(e => e.id !== id);
+            AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated)).catch(() => {});
+            return updated;
+          });
+        },
+      },
+    ]);
+  }, []);
+
   // ═══════════════════════════════════════════════════════════════════════════
   // HOME
   // ═══════════════════════════════════════════════════════════════════════════
@@ -496,6 +652,132 @@ export default function App() {
               <Ionicons name="restaurant-outline" size={20} color={C.white} style={{ marginRight: 10 }} />
               <Text style={s.ctaTxt}>Find My Meal</Text>
             </TouchableOpacity>
+
+            {/* ── Meal History ─────────────────────────────────────────── */}
+            <View style={s.historyHeader}>
+              <Text style={s.historySectionLabel}>Meal History</Text>
+              {mealHistory.length > 0 && (
+                <Text style={s.historyCount}>
+                  {groupByDayAndRestaurant(mealHistory).reduce((n, g) => n + g.trips.length, 0)} visits
+                </Text>
+              )}
+            </View>
+
+            {mealHistory.length === 0 ? (
+              <View style={s.historyEmpty}>
+                <Ionicons name="time-outline" size={32} color={C.muted} />
+                <Text style={s.historyEmptyTxt}>{'No meals logged yet.\nConfirm a meal to see it here.'}</Text>
+              </View>
+            ) : (
+              groupByDayAndRestaurant(mealHistory).map(({ dayLabel, trips }) => (
+                <View key={dayLabel}>
+                  <Text style={s.historyDayLabel}>{dayLabel}</Text>
+                  {trips.map((trip) => {
+                    const tripId = `${trip[0].restaurant}_${trip[0].timestamp}`;
+                    const isExpanded = expandedMealIds.has(tripId);
+                    const d = new Date(trip[0].timestamp);
+                    const h = d.getHours(), m = d.getMinutes().toString().padStart(2, '0');
+                    const timeStr = `${h % 12 || 12}:${m} ${h >= 12 ? 'PM' : 'AM'}`;
+
+                    let totP = 0, totC = 0, totF = 0;
+                    for (const e of trip) {
+                      totP += (e.protein ?? 0) * e.qty;
+                      totC += (e.carbs   ?? 0) * e.qty;
+                      totF += (e.fat     ?? 0) * e.qty;
+                    }
+                    totP = Math.round(totP * 10) / 10;
+                    totC = Math.round(totC * 10) / 10;
+                    totF = Math.round(totF * 10) / 10;
+                    const totCal = Math.round(totP * 4 + totC * 4 + totF * 9);
+                    const hasUploaded = trip.some(e => e.source === 'uploaded');
+
+                    return (
+                      <TouchableOpacity
+                        key={tripId}
+                        style={s.mealSessionCard}
+                        onPress={() => toggleMealExpand(tripId)}
+                        activeOpacity={0.88}
+                      >
+                        {/* Header */}
+                        <View style={s.mealSessionHeader}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={s.mealSessionTitle}>{trip[0].restaurant}</Text>
+                          </View>
+                          <View style={s.mealSessionMeta}>
+                            <Text style={s.mealSessionTime}>{timeStr}</Text>
+                            <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={13} color={C.muted} style={{ marginLeft: 6 }} />
+                          </View>
+                        </View>
+
+                        {/* Totals */}
+                        <View style={s.mealSessionTotals}>
+                          <View style={s.mealTotalProteinBlock}>
+                            <Text style={s.mealTotalProteinNum}>{totP}</Text>
+                            <Text style={s.mealTotalProteinLabel}>g protein</Text>
+                          </View>
+                          <View style={s.mealTotalSecondary}>
+                            <Text style={s.mealTotalSecTxt}>{totCal} cal</Text>
+                            <Text style={s.mealTotalDot}>·</Text>
+                            <Text style={s.mealTotalSecTxt}>{totC}g C</Text>
+                            <Text style={s.mealTotalDot}>·</Text>
+                            <Text style={s.mealTotalSecTxt}>{totF}g F</Text>
+                            {hasUploaded && (
+                              <View style={[s.historySourceBadge, s.historySourceBadgeUpl, { marginLeft: 4 }]}>
+                                <Text style={[s.historySourceTxt, s.historySourceTxtUpl]}>✨ AI</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+
+                        {/* Expanded items */}
+                        {isExpanded && (
+                          <View style={s.mealExpandedWrap}>
+                            {trip.map((entry) => {
+                              const eP   = Math.round((entry.protein ?? 0) * entry.qty * 10) / 10;
+                              const eC   = Math.round((entry.carbs   ?? 0) * entry.qty * 10) / 10;
+                              const eF   = Math.round((entry.fat     ?? 0) * entry.qty * 10) / 10;
+                              const eCal = Math.round(eP * 4 + eC * 4 + eF * 9);
+                              return (
+                                <TouchableOpacity
+                                  key={entry.id}
+                                  style={s.mealItemRow}
+                                  onLongPress={() => deleteHistoryEntry(entry.id)}
+                                  delayLongPress={400}
+                                  activeOpacity={0.75}
+                                >
+                                  <View style={s.mealItemHeader}>
+                                    <Text style={s.mealItemQty}>{entry.qty.toFixed(1)}×</Text>
+                                    <Text style={s.mealItemName} numberOfLines={2}>{entry.itemName}</Text>
+                                  </View>
+                                  <View style={s.mealItemMacroGrid}>
+                                    <View style={[s.mealMacroCell, s.mealMacroCellProtein]}>
+                                      <Text style={[s.mealMacroCellVal, s.mealMacroCellValProtein]}>{eP}g</Text>
+                                      <Text style={[s.mealMacroCellLabel, s.mealMacroCellLabelProtein]}>Protein</Text>
+                                    </View>
+                                    {[
+                                      { label: 'Cal',   val: String(eCal) },
+                                      { label: 'Carbs', val: `${eC}g` },
+                                      { label: 'Fat',   val: `${eF}g` },
+                                    ].map(({ label, val }) => (
+                                      <View key={label} style={s.mealMacroCell}>
+                                        <Text style={s.mealMacroCellVal}>{val}</Text>
+                                        <Text style={s.mealMacroCellLabel}>{label}</Text>
+                                      </View>
+                                    ))}
+                                  </View>
+                                </TouchableOpacity>
+                              );
+                            })}
+                            <Text style={s.mealExpandHint}>Long press an item to remove it</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))
+            )}
+            <View style={{ height: 32 }} />
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -507,11 +789,13 @@ export default function App() {
   // ═══════════════════════════════════════════════════════════════════════════
   if (view === 'feed') {
     const targets = { protein: parseFloat(targetP)||0, carbs: parseFloat(targetC)||0, fat: parseFloat(targetF)||0 };
+    const hasTargets = targets.protein > 0 || targets.carbs > 0 || targets.fat > 0;
 
+    // ── Near Me cards ─────────────────────────────────────────────────────────
     const rawList = restaurants.length > 0 ? restaurants
       : (!feedLoading ? Object.keys(COMBINED_MENUS).map(name => ({ name, distance: null, address: null, latitude: null, longitude: null, placeId: null })) : []);
 
-    const cards = rawList.map(r => {
+    const nearMeCards = rawList.map(r => {
       const key = Object.keys(COMBINED_MENUS).find(k =>
         k.toLowerCase() === r.name.toLowerCase() ||
         r.name.toLowerCase().includes(k.toLowerCase()) ||
@@ -532,62 +816,142 @@ export default function App() {
       return (a.distance ?? Infinity) - (b.distance ?? Infinity);
     });
 
+    // ── Plan Ahead cards ──────────────────────────────────────────────────────
+    const planAheadCards = Object.keys(COMBINED_MENUS)
+      .filter(name => !feedQuery || name.toLowerCase().includes(feedQuery.toLowerCase()))
+      .map(name => {
+        let bestPct = 0, bestFit = null;
+        for (const item of COMBINED_MENUS[name]) {
+          const pct = calculateMatchPercentage(targets, { protein: item.protein, carbs: item.carbs, fat: item.fat });
+          if (pct > bestPct) { bestPct = pct; if (item.category === 'protein') bestFit = item.name; }
+        }
+        return { name, bestPct: Math.round(bestPct), bestFit, distance: null, address: null, latitude: null, longitude: null, placeId: null };
+      })
+      .sort((a, b) => hasTargets
+        ? (b.bestPct - a.bestPct) || a.name.localeCompare(b.name)
+        : a.name.localeCompare(b.name)
+      );
+
+    const renderFeedCard = (r, i) => {
+      const bg = r.bestPct == null ? '#444' : r.bestPct >= 80 ? C.accent : r.bestPct >= 50 ? '#D4860A' : '#444';
+      return (
+        <TouchableOpacity key={`${r.name}-${i}`} style={s.feedCard} onPress={() => openDetail(r)} activeOpacity={0.78}>
+          <View style={s.feedThumb}><Text style={s.feedInitials}>{r.name?.[0]?.toUpperCase() ?? '?'}</Text></View>
+          <View style={{ flex: 1 }}>
+            <View style={s.feedCardTop}>
+              <Text style={s.feedName} numberOfLines={1}>{r.name}</Text>
+              <View style={[s.badge, { backgroundColor: bg }]}>
+                <Text style={s.badgeTxt}>{r.bestPct != null ? `${r.bestPct}% Match` : 'Tap to load'}</Text>
+              </View>
+            </View>
+            {r.bestFit
+              ? <Text style={s.feedSub} numberOfLines={1}>Best: {r.bestFit}</Text>
+              : r.distance != null
+                ? <Text style={s.feedSub}>{r.distance < 0.1 ? 'Nearby' : `${r.distance.toFixed(1)} mi`}</Text>
+                : null}
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.25)" />
+        </TouchableOpacity>
+      );
+    };
+
     return (
       <SafeAreaView style={s.root}>
         <StatusBar style="light" />
         <View style={s.header}>
           <TouchableOpacity onPress={goHome} style={s.headerIcon} activeOpacity={0.7}>
+            <Ionicons name="arrow-back-outline" size={20} color={C.accent} />
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>{feedMode === 'plan_ahead' ? 'Search Popular Chains' : 'Nearby Restaurants'}</Text>
+          <TouchableOpacity onPress={goHome} style={s.headerIcon} activeOpacity={0.7}>
             <Ionicons name="home-outline" size={20} color={C.gray} />
           </TouchableOpacity>
-          <Text style={s.headerTitle}>Nearby Restaurants</Text>
-          <TouchableOpacity onPress={() => { setRestaurants([]); loadFeed(true); }} style={s.headerIcon} activeOpacity={0.7}>
-            <Ionicons name="refresh-outline" size={20} color={C.accent} />
+        </View>
+
+        {/* Mode toggle */}
+        <View style={s.feedModeBar}>
+          <TouchableOpacity
+            style={[s.feedModeBtn, feedMode === 'near_me' && s.feedModeBtnActive]}
+            onPress={() => setFeedMode('near_me')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="location-outline" size={13} color={feedMode === 'near_me' ? C.white : C.muted} style={{ marginRight: 5 }} />
+            <Text style={[s.feedModeTxt, feedMode === 'near_me' && s.feedModeTxtActive]}>Near Me</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.feedModeBtn, feedMode === 'plan_ahead' && s.feedModeBtnActive]}
+            onPress={() => { setFeedMode('plan_ahead'); setFeedQuery(''); }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="calendar-outline" size={13} color={feedMode === 'plan_ahead' ? C.white : C.muted} style={{ marginRight: 5 }} />
+            <Text style={[s.feedModeTxt, feedMode === 'plan_ahead' && s.feedModeTxtActive]}>Search Popular Chains</Text>
           </TouchableOpacity>
         </View>
-        <View style={s.radiusRow}>
-          <Text style={s.radiusLabel}>Radius</Text>
-          <Slider
-            style={s.radiusSlider}
-            minimumValue={0}
-            maximumValue={15}
-            step={5}
-            value={searchRadius}
-            onSlidingComplete={(val) => {
-              searchRadiusRef.current = val;
-              setSearchRadius(val);
-              setRestaurants([]);
-              loadFeed(true);
-            }}
-            minimumTrackTintColor={C.accent}
-            maximumTrackTintColor='rgba(255,255,255,0.15)'
-            thumbTintColor={C.accent}
-          />
-          <Text style={s.radiusValue}>{searchRadius} mi</Text>
-        </View>
-        {feedLoading ? (
-          <View style={s.center}><ActivityIndicator size="large" color={C.accent} /><Text style={s.centerTxt}>Finding restaurants nearby…</Text></View>
+
+        {/* Radius slider — Near Me only */}
+        {feedMode === 'near_me' && (
+          <View style={s.radiusRow}>
+            <Text style={s.radiusLabel}>Radius</Text>
+            <Slider
+              style={s.radiusSlider}
+              minimumValue={0}
+              maximumValue={15}
+              step={5}
+              value={searchRadius}
+              onSlidingComplete={(val) => {
+                searchRadiusRef.current = val;
+                setSearchRadius(val);
+                setRestaurants([]);
+                loadFeed(true);
+              }}
+              minimumTrackTintColor={C.accent}
+              maximumTrackTintColor='rgba(255,255,255,0.15)'
+              thumbTintColor={C.accent}
+            />
+            <Text style={s.radiusValue}>{searchRadius} mi</Text>
+          </View>
+        )}
+
+        {/* Search bar — Plan Ahead only */}
+        {feedMode === 'plan_ahead' && (
+          <View style={s.feedSearchRow}>
+            <Ionicons name="search-outline" size={16} color={C.muted} style={{ marginRight: 8 }} />
+            <TextInput
+              style={s.feedSearchInput}
+              value={feedQuery}
+              onChangeText={setFeedQuery}
+              placeholder="Search all restaurants…"
+              placeholderTextColor={C.muted}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
+              autoCorrect={false}
+            />
+            {feedQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setFeedQuery('')} activeOpacity={0.7} style={{ marginLeft: 6 }}>
+                <Ionicons name="close-circle" size={16} color={C.muted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Content */}
+        {feedMode === 'near_me' ? (
+          feedLoading ? (
+            <View style={s.center}><ActivityIndicator size="large" color={C.accent} /><Text style={s.centerTxt}>Finding restaurants nearby…</Text></View>
+          ) : (
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={s.feedList} showsVerticalScrollIndicator={false}>
+              {nearMeCards.length === 0
+                ? <View style={s.center}><Ionicons name="location-outline" size={48} color={C.muted} /><Text style={s.centerTxt}>No restaurants found.{'\n'}Check location permissions.</Text></View>
+                : nearMeCards.map(renderFeedCard)
+              }
+              <View style={{ height: 40 }} />
+            </ScrollView>
+          )
         ) : (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={s.feedList} showsVerticalScrollIndicator={false}>
-            {cards.length === 0
-              ? <View style={s.center}><Ionicons name="location-outline" size={48} color={C.muted} /><Text style={s.centerTxt}>No restaurants found.{'\n'}Check location permissions.</Text></View>
-              : cards.map((r, i) => {
-                  const bg = r.bestPct == null ? '#444' : r.bestPct >= 80 ? C.accent : r.bestPct >= 50 ? '#D4860A' : '#444';
-                  return (
-                    <TouchableOpacity key={`${r.name}-${i}`} style={s.feedCard} onPress={() => openDetail(r)} activeOpacity={0.78}>
-                      <View style={s.feedThumb}><Text style={s.feedInitials}>{r.name?.[0]?.toUpperCase() ?? '?'}</Text></View>
-                      <View style={{ flex: 1 }}>
-                        <View style={s.feedCardTop}>
-                          <Text style={s.feedName} numberOfLines={1}>{r.name}</Text>
-                          <View style={[s.badge, { backgroundColor: bg }]}><Text style={s.badgeTxt}>{r.bestPct != null ? `${r.bestPct}% Match` : 'Tap to load'}</Text></View>
-                        </View>
-                        {r.bestFit ? <Text style={s.feedSub} numberOfLines={1}>Best: {r.bestFit}</Text>
-                          : r.distance != null ? <Text style={s.feedSub}>{r.distance < 0.1 ? 'Nearby' : `${r.distance.toFixed(1)} mi`}</Text>
-                          : null}
-                      </View>
-                      <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.25)" />
-                    </TouchableOpacity>
-                  );
-                })
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={s.feedList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {planAheadCards.length === 0
+              ? <View style={s.center}><Ionicons name="search-outline" size={48} color={C.muted} /><Text style={s.centerTxt}>{`No results for "${feedQuery}"`}</Text></View>
+              : planAheadCards.map(renderFeedCard)
             }
             <View style={{ height: 40 }} />
           </ScrollView>
@@ -698,12 +1062,12 @@ export default function App() {
       <SafeAreaView style={s.root}>
         <StatusBar style="light" />
         <View style={s.header}>
-          <TouchableOpacity onPress={goHome} style={s.headerIcon} activeOpacity={0.7}>
-            <Ionicons name="home-outline" size={20} color={C.gray} />
-          </TouchableOpacity>
-          <Text style={s.headerTitle} numberOfLines={1}>{selName}</Text>
           <TouchableOpacity onPress={() => setView('feed')} style={s.headerIcon} activeOpacity={0.7}>
             <Ionicons name="arrow-back-outline" size={20} color={C.accent} />
+          </TouchableOpacity>
+          <Text style={s.headerTitle} numberOfLines={1}>{selName}</Text>
+          <TouchableOpacity onPress={goHome} style={s.headerIcon} activeOpacity={0.7}>
+            <Ionicons name="home-outline" size={20} color={C.gray} />
           </TouchableOpacity>
         </View>
 
@@ -760,9 +1124,14 @@ export default function App() {
                 <Text style={[s.tabBtnTxt, activeMenuTab === 'official' && s.tabBtnTxtActive]}>Official Items</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[s.tabBtn, activeMenuTab === 'uploaded' && s.tabBtnActive]} onPress={() => setActiveMenuTab('uploaded')} activeOpacity={0.8}>
-                <Text style={[s.tabBtnTxt, activeMenuTab === 'uploaded' && s.tabBtnTxtActive]}>
-                  {`User Uploaded${ocrItems.length > 0 ? ` (${ocrItems.length})` : ''}`}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text style={[s.tabBtnTxt, activeMenuTab === 'uploaded' && s.tabBtnTxtActive]}>
+                    {`User Uploaded${ocrItems.length > 0 ? ` (${ocrItems.length})` : ''}`}
+                  </Text>
+                  {ocrFromCache && (
+                    <Ionicons name="time-outline" size={11} color={activeMenuTab === 'uploaded' ? C.white : C.muted} />
+                  )}
+                </View>
               </TouchableOpacity>
             </View>
             {activeMenuTab === 'official' ? (
@@ -870,6 +1239,15 @@ export default function App() {
                   </View>
                 ) : (
                   <>
+                    {ocrFromCache && (
+                      <View style={s.ocrCacheBar}>
+                        <Ionicons name="time-outline" size={12} color={C.muted} />
+                        <Text style={s.ocrCacheTxt}>Loaded from cache</Text>
+                        <TouchableOpacity onPress={clearOcrCache} style={s.ocrRescanBtn} activeOpacity={0.8}>
+                          <Text style={s.ocrRescanTxt}>Re-scan</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                     {uploadedBanner && (
                       <View style={[
                         s.recCard,
@@ -925,6 +1303,10 @@ export default function App() {
                       <Text style={s.sectionLabel}>✨ All Scanned Items</Text>
                       {uploadedItemsSorted.map(renderItem)}
                     </View>
+                    <TouchableOpacity style={s.submitDbBtn} onPress={openSubmitModal} activeOpacity={0.85}>
+                      <Ionicons name="cloud-upload-outline" size={16} color={C.white} style={{ marginRight: 8 }} />
+                      <Text style={s.submitDbBtnTxt}>Submit Menu to Community Database</Text>
+                    </TouchableOpacity>
                   </>
                 )}
                 <View style={{ height: 120 }} />
@@ -942,9 +1324,7 @@ export default function App() {
           )}
           <TouchableOpacity
             style={[s.confirmBtn, !hasSelect && s.confirmBtnDim]}
-            onPress={hasSelect ? () => Alert.alert('Meal Confirmed ✓',
-              `${totals.protein}g P · ${totals.carbs}g C · ${totals.fat}g F`,
-              [{ text: 'Done', onPress: goHome }]) : undefined}
+            onPress={hasSelect ? confirmMeal : undefined}
             activeOpacity={hasSelect ? 0.85 : 1}
           >
             <Text style={s.confirmBtnTxt}>{hasSelect ? 'Confirm Meal →' : 'Select items above'}</Text>
@@ -990,6 +1370,77 @@ export default function App() {
             </View>
           </TouchableWithoutFeedback>
         </Modal>
+
+        {/* ── Community Submit Modal ──────────────────────────────────── */}
+        <Modal visible={showSubmitModal} transparent animationType="fade" onRequestClose={() => submitStatus !== 'loading' && setShowSubmitModal(false)}>
+          <TouchableWithoutFeedback onPress={() => submitStatus !== 'loading' && setShowSubmitModal(false)}>
+            <View style={s.modalOverlay}>
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={s.modalCard}>
+                  {submitStatus === 'success' ? (
+                    <>
+                      <Text style={s.modalTitle}>Submitted!</Text>
+                      <Text style={[s.modalSub, { marginBottom: 20 }]}>
+                        Thanks for contributing. Our team will review it before adding it to the community database.
+                      </Text>
+                      <TouchableOpacity style={s.modalSaveBtn} onPress={() => setShowSubmitModal(false)} activeOpacity={0.85}>
+                        <Text style={s.modalSaveTxt}>Done</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={s.modalTitle}>Submit to Community</Text>
+                      <Text style={s.modalSub}>Help other macro-conscious eaters find this spot.</Text>
+
+                      <Text style={s.modalFieldLabel}>Restaurant Name</Text>
+                      <TextInput
+                        style={s.modalNameInput}
+                        value={submitRestName}
+                        onChangeText={setSubmitRestName}
+                        placeholder="e.g. Joe's Diner"
+                        placeholderTextColor={C.muted}
+                        returnKeyType="next"
+                      />
+
+                      <Text style={s.modalFieldLabel}>Street Address / Location</Text>
+                      <TextInput
+                        style={s.modalNameInput}
+                        value={submitAddr}
+                        onChangeText={setSubmitAddr}
+                        placeholder="e.g. 123 Main St, Austin TX 78701"
+                        placeholderTextColor={C.muted}
+                        returnKeyType="done"
+                        onSubmitEditing={Keyboard.dismiss}
+                      />
+
+                      <Text style={s.submitItemCount}>{ocrItems.length} item{ocrItems.length !== 1 ? 's' : ''} · will be marked pending review</Text>
+
+                      {!!submitError && <Text style={s.submitErrorTxt}>{submitError}</Text>}
+
+                      <View style={s.modalBtnRow}>
+                        <TouchableOpacity style={s.modalCancelBtn} onPress={() => setShowSubmitModal(false)} activeOpacity={0.75}>
+                          <Text style={s.modalCancelTxt}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[s.modalSaveBtn, submitStatus === 'loading' && { opacity: 0.6 }]}
+                          onPress={handleSubmitToDb}
+                          disabled={submitStatus === 'loading'}
+                          activeOpacity={0.85}
+                        >
+                          {submitStatus === 'loading'
+                            ? <ActivityIndicator size="small" color={C.white} />
+                            : <Text style={s.modalSaveTxt}>Submit →</Text>
+                          }
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+
       </SafeAreaView>
     );
   }

@@ -3,30 +3,33 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 export default function MatchRing({ percentage, size = 120 }) {
-  const strokeWidth = 10;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const clamped = Math.min(100, Math.max(0, percentage));
+  const strokeWidth      = 10;
+  const radius           = (size - strokeWidth) / 2;
+  const circumference    = 2 * Math.PI * radius;
+  const clamped          = Math.min(100, Math.max(0, percentage));
   const strokeDashoffset = circumference - (clamped / 100) * circumference;
 
-  const color =
-    clamped >= 70 ? '#66bb6a' : clamped >= 50 ? '#ffa726' : '#ef5350';
+  const color = clamped >= 70 ? '#66bb6a' : clamped >= 50 ? '#ffa726' : '#ef5350';
+
+  // The safe text area is the full inner circle diameter.
+  // adjustsFontSizeToFit handles any overflow — no manual padding reduction needed.
+  const innerDiameter = size - 2 * strokeWidth;
+
+  // Starting font size (upper bound). The OS scales it down to fit if needed.
+  const pctFontSize   = Math.round(size * 0.30);
+  const matchFontSize = Math.max(8, Math.round(size * 0.115));
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
       <Svg width={size} height={size}>
         <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
+          cx={size / 2} cy={size / 2} r={radius}
           stroke="rgba(255,255,255,0.1)"
           strokeWidth={strokeWidth}
           fill="none"
         />
         <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
+          cx={size / 2} cy={size / 2} r={radius}
           stroke={color}
           strokeWidth={strokeWidth}
           fill="none"
@@ -37,9 +40,20 @@ export default function MatchRing({ percentage, size = 120 }) {
           origin={`${size / 2}, ${size / 2}`}
         />
       </Svg>
-      <View style={styles.labelContainer}>
-        <Text style={[styles.percentageText, { color }]}>{Math.round(clamped)}%</Text>
-        <Text style={styles.matchLabel}>match</Text>
+
+      {/* Absolutely centred text block, bounded to the inner circle width */}
+      <View style={[styles.labelContainer, { width: innerDiameter }]}>
+        <Text
+          style={[styles.percentageText, { color, fontSize: pctFontSize }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.5}
+        >
+          {`${Math.round(clamped)}%`}
+        </Text>
+        <Text style={[styles.matchLabel, { fontSize: matchFontSize }]}>
+          match
+        </Text>
       </View>
     </View>
   );
@@ -53,18 +67,21 @@ const styles = StyleSheet.create({
   },
   labelContainer: {
     position: 'absolute',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
   },
   percentageText: {
-    fontSize: 28,
     fontWeight: 'bold',
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   matchLabel: {
-    fontSize: 11,
     color: '#8a8a8a',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginTop: -2,
+    marginTop: 2,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
 });
