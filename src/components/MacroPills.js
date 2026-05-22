@@ -2,9 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 const PILL_CONFIG = [
-  { key: 'protein', letter: 'P', bg: 'rgba(66,165,245,0.15)', border: '#42a5f5', text: '#42a5f5' },
-  { key: 'carbs', letter: 'C', bg: 'rgba(0,121,107,0.15)', border: '#00796b', text: '#00796b' },
-  { key: 'fat', letter: 'F', bg: 'rgba(255,167,38,0.15)', border: '#ffa726', text: '#ffa726' },
+  { key: 'protein', letter: 'P', bg: 'rgba(0,122,255,0.1)',  border: '#007AFF', text: '#007AFF' },
+  { key: 'carbs',   letter: 'C', bg: 'rgba(52,199,89,0.1)',  border: '#34C759', text: '#34C759' },
+  { key: 'fat',     letter: 'F', bg: 'rgba(255,149,0,0.12)', border: '#FF9500', text: '#FF9500' },
 ];
 
 export default function MacroPills({ protein, carbs, fat }) {

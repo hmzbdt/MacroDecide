@@ -21,6 +21,7 @@ import { RESTAURANT_DB }                                     from './src/data/re
 import { VERIFIED_MENUS }                                    from './src/data/verifiedMenus';
 import ChipotleBuilder                                       from './src/components/ChipotleBuilder';
 import { s, C }                                              from './src/styles/appStyles';
+import Onboarding, { ONBOARDING_KEY }                        from './src/components/Onboarding';
 import Slider                                                from '@react-native-community/slider';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -28,8 +29,9 @@ const CACHE_PREFIX   = 'menu_v2_';
 const UPL_PREFIX     = 'user_upload_v1_';
 const CACHE_TTL_MS   = 7 * 24 * 60 * 60 * 1000;
 const GEO_RADIUS_M   = 200;
-const SEARCH_CTX_KEY = '@md_search_ctx';
-const HISTORY_KEY    = '@md_meal_history_v1';
+const SEARCH_CTX_KEY  = '@md_search_ctx';
+const HISTORY_KEY     = '@md_meal_history_v1';
+const PROTEIN_GOAL_KEY = '@md_protein_goal';
 
 // Merged lookup for feed bestPct (VERIFIED_MENUS takes precedence over RESTAURANT_DB)
 const COMBINED_MENUS = { ...RESTAURANT_DB, ...VERIFIED_MENUS };
@@ -219,11 +221,25 @@ export default function App() {
   const [mealHistory, setMealHistory] = useState([]);
   const [expandedMealIds, setExpandedMealIds] = useState(new Set());
 
+  // ── Quick Scan (home screen universal scanner) ────────────────────────────
+  const [quickScanItems,        setQuickScanItems]        = useState([]);
+  const [quickScanLoading,      setQuickScanLoading]      = useState(false);
+  const [showQuickScan,         setShowQuickScan]         = useState(false);
+  const [quickScanName,         setQuickScanName]         = useState('');
+  const [quickScanAddr,         setQuickScanAddr]         = useState('');
+  const [quickScanQty,          setQuickScanQty]          = useState({});
+  const [quickScanSubmitStatus, setQuickScanSubmitStatus] = useState('idle');
+  const [quickScanSubmitError,  setQuickScanSubmitError]  = useState('');
+  const [showQuickScanSubmit,   setShowQuickScanSubmit]   = useState(false);
+
   const toggleMealExpand = (id) => setExpandedMealIds(prev => {
     const next = new Set(prev);
     if (next.has(id)) next.delete(id); else next.add(id);
     return next;
   });
+
+  // ── Onboarding gate ──────────────────────────────────────────────────────
+  const [onboardingDone, setOnboardingDone] = useState(null); // null = loading
 
   // ── Detail: inline macro edit modal ──────────────────────────────────────
   const [editItem, setEditItem] = useState(null);
@@ -243,6 +259,20 @@ export default function App() {
   useEffect(() => {
     AsyncStorage.getItem(HISTORY_KEY)
       .then(raw => { if (raw) setMealHistory(JSON.parse(raw)); })
+      .catch(() => {});
+  }, []);
+
+  // ─── Onboarding check ─────────────────────────────────────────────────────
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then(val => setOnboardingDone(val === 'true'))
+      .catch(() => setOnboardingDone(true)); // fail open — never block the app
+  }, []);
+
+  // ─── Load persisted protein goal (set during onboarding) ─────────────────
+  useEffect(() => {
+    AsyncStorage.getItem(PROTEIN_GOAL_KEY)
+      .then(val => { if (val) setTargetP(val); })
       .catch(() => {});
   }, []);
 
@@ -409,6 +439,40 @@ export default function App() {
       : `You should eat ${sug.servings.toFixed(1)} servings of ${item.name} to best match your remaining macros.`;
     return { text, isWarning, isPerfect, projP: sug.projP, projC: sug.projC, projF: sug.projF, item, sug };
   }, [targetP, targetC, targetF, ocrItems]);
+
+  // ─── Quick Scan derived state ─────────────────────────────────────────────
+  const quickScanTotals = useMemo(() => {
+    let p = 0, c = 0, f = 0;
+    for (const item of quickScanItems) {
+      const q = parseFloat(quickScanQty[item.name]) || 0;
+      if (q) { p += item.protein * q; c += item.carbs * q; f += item.fat * q; }
+    }
+    const r = (n) => Math.round(n * 10) / 10;
+    return { protein: r(p), carbs: r(c), fat: r(f) };
+  }, [quickScanItems, quickScanQty]);
+
+  const quickScanMatchPct = useMemo(() => {
+    const tP = parseFloat(targetP)||0, tC = parseFloat(targetC)||0, tF = parseFloat(targetF)||0;
+    if (!tP && !tC && !tF) return 0;
+    if (!Object.values(quickScanQty).some(q => q > 0)) return 0;
+    return Math.min(100, Math.round(calculateMatchPercentage({ protein: tP, carbs: tC, fat: tF }, quickScanTotals)));
+  }, [quickScanTotals, targetP, targetC, targetF, quickScanQty]);
+
+  const quickScanBanner = useMemo(() => {
+    const tPv = parseFloat(targetP)||0, tCv = parseFloat(targetC)||0, tFv = parseFloat(targetF)||0;
+    if (!tPv || !quickScanItems.length) return null;
+    const proteins = quickScanItems.filter(i => i.category === 'protein' && i.protein > 0);
+    if (!proteins.length) return null;
+    const best = findBestItem({ protein: tPv, carbs: tCv, fat: tFv }, proteins);
+    if (!best) return null;
+    const { item, sug, density } = best;
+    const isWarning = !!sug.limitedBy;
+    const isPerfect = !isWarning && density >= 15;
+    const text = isWarning
+      ? `Eat ${sug.servings.toFixed(1)} servings of ${item.name}, but watch your ${sug.limitedBy} cap.`
+      : `You should eat ${sug.servings.toFixed(1)} servings of ${item.name} to best match your remaining macros.`;
+    return { text, isWarning, isPerfect, projP: sug.projP, projC: sug.projC, projF: sug.projF, item, sug };
+  }, [targetP, targetC, targetF, quickScanItems]);
 
   // ─── Pre-scan list cleaner ────────────────────────────────────────────────
   // Purges items with impossible single-serving macros or all-zero data from
@@ -615,14 +679,166 @@ export default function App() {
     ]);
   }, []);
 
+  // ─── Quick Scan handlers ──────────────────────────────────────────────────
+  const quickScanOcr = useCallback(async (base64) => {
+    setQuickScanItems([]); setQuickScanQty({}); setQuickScanName(''); setQuickScanAddr('');
+    setQuickScanLoading(true); setShowQuickScan(true);
+    try {
+      const items = await analyzeMenuImage(base64, '', []);
+      if (!items.length) {
+        Alert.alert('Scan Failed', "Couldn't find items. Try a clearer photo.");
+        setShowQuickScan(false);
+      } else { setQuickScanItems(items); }
+    } catch (err) {
+      if (err instanceof MenuVisionRateLimitError)
+        Alert.alert('Scan Limit Reached', 'Monthly scan limit reached. Please try again later.');
+      else Alert.alert('Scan Error', err?.message ?? 'Unknown error');
+      setShowQuickScan(false);
+    } finally { setQuickScanLoading(false); }
+  }, []);
+
+  const pickAndScanQuick = async (source) => {
+    let base64 = null;
+    if (source === 'camera') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permission Needed', 'Camera access required.'); return; }
+      const r = await ImagePicker.launchCameraAsync({ base64: true, quality: 0.7 });
+      if (!r.canceled && r.assets?.[0]?.base64) base64 = r.assets[0].base64;
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permission Needed', 'Library access required.'); return; }
+      const r = await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.7 });
+      if (!r.canceled && r.assets?.[0]?.base64) base64 = r.assets[0].base64;
+    }
+    if (base64) quickScanOcr(base64);
+  };
+
+  const promptQuickScan = () => Alert.alert('Scan Any Menu', 'Add items from a photo:', [
+    { text: 'Take Photo',          onPress: () => pickAndScanQuick('camera')  },
+    { text: 'Choose from Library', onPress: () => pickAndScanQuick('library') },
+    { text: 'Cancel',              style: 'cancel' },
+  ]);
+
+  const incQuickQty = (name) => setQuickScanQty(p => ({ ...p, [name]: Math.round(((p[name]||0)+0.5)*10)/10 }));
+  const decQuickQty = (name) => setQuickScanQty(p => {
+    const next = Math.round(((p[name]||0)-0.5)*10)/10;
+    if (next <= 0) { const n = {...p}; delete n[name]; return n; }
+    return { ...p, [name]: next };
+  });
+
+  const confirmQuickScan = useCallback(async () => {
+    const label = quickScanName.trim() || 'Quick Scan';
+    const newEntries = quickScanItems.reduce((acc, item) => {
+      const qty = parseFloat(quickScanQty[item.name]) || 0;
+      if (qty <= 0) return acc;
+      acc.push({
+        id: `${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+        timestamp: Date.now(),
+        restaurant: label,
+        itemName:   item.name,
+        qty,
+        protein: item.protein ?? 0,
+        carbs:   item.carbs   ?? 0,
+        fat:     item.fat     ?? 0,
+        source:  'uploaded',
+      });
+      return acc;
+    }, []);
+    if (!newEntries.length) return;
+    if (quickScanName.trim())
+      AsyncStorage.setItem(`${UPL_PREFIX}${quickScanName.trim()}`, JSON.stringify(quickScanItems)).catch(() => {});
+    const updated = [...newEntries, ...mealHistory];
+    setMealHistory(updated);
+    AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated)).catch(() => {});
+    setShowQuickScan(false);
+    setQuickScanItems([]); setQuickScanQty({});
+  }, [quickScanItems, quickScanQty, quickScanName, mealHistory]);
+
+  const handleQuickScanSubmit = async () => {
+    if (!quickScanName.trim()) { setQuickScanSubmitError('Restaurant name is required.'); return; }
+    if (!quickScanAddr.trim()) { setQuickScanSubmitError('Address is required.'); return; }
+    setQuickScanSubmitStatus('loading'); setQuickScanSubmitError('');
+    try {
+      await submitMenuToCommunity({ restaurantName: quickScanName.trim(), address: quickScanAddr.trim(), items: quickScanItems });
+      AsyncStorage.setItem(`${UPL_PREFIX}${quickScanName.trim()}`, JSON.stringify(quickScanItems)).catch(() => {});
+      setQuickScanSubmitStatus('success');
+    } catch (err) {
+      setQuickScanSubmitStatus('error');
+      setQuickScanSubmitError(err?.message ?? 'Submission failed. Please try again.');
+    }
+  };
+
+  const renderQuickItem = (item) => {
+    const qty    = quickScanQty[item.name] || 0;
+    const active = qty > 0;
+    const macro  = [item.protein > 0 ? `${item.protein}P` : '', item.carbs > 0 ? `${item.carbs}C` : '', item.fat > 0 ? `${item.fat}F` : ''].filter(Boolean).join(' · ');
+    const scaled = qty > 0 && qty !== 1 ? `  ×${qty.toFixed(1)} = ${Math.round(item.protein*qty)}P ${Math.round(item.carbs*qty)}C ${Math.round(item.fat*qty)}F` : '';
+    const itemCal    = item.protein * 4 + (item.carbs||0) * 4 + (item.fat||0) * 9;
+    const densityPct = itemCal > 0 ? Math.round((item.protein / itemCal) * 100) : 0;
+    const tP = parseFloat(targetP)||0, tC = parseFloat(targetC)||0, tF = parseFloat(targetF)||0;
+    const sug = tP > 0 ? suggestServing(item, { protein: tP, carbs: tC, fat: tF }) : null;
+    const chipStyle = sug?.limitedBy
+      ? { borderColor: 'rgba(255,149,0,0.35)', backgroundColor: 'rgba(255,149,0,0.08)' }
+      : { borderColor: 'rgba(0,122,255,0.3)',  backgroundColor: 'rgba(0,122,255,0.06)' };
+    const chipColor = sug?.limitedBy ? '#FF9500' : '#007AFF';
+    const chipText  = sug
+      ? sug.limitedBy
+        ? `⚠ ×${sug.servings.toFixed(1)} (${sug.limitedBy} cap) → ${sug.projP}g P`
+        : `⚡ ×${sug.servings.toFixed(1)} hits ${sug.projP}g P`
+      : null;
+    return (
+      <View key={item.name} style={[s.menuRow, active && s.menuRowActive]}>
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text style={[s.menuName, active && s.menuNameActive]}>{item.name}</Text>
+          <View style={s.pillRow}>
+            <View style={s.pill}><Text style={s.pillTxt}>{macro}{scaled}</Text></View>
+            {item.isAIResult && item.dataSource !== 'userCorrected' && <View style={s.tagAI}><Text style={s.tagAITxt}>✨ AI</Text></View>}
+            {densityPct > 0 && <View style={s.densityBadge}><Text style={s.densityBadgeTxt}>{densityPct}% P</Text></View>}
+          </View>
+          {chipText && (
+            <TouchableOpacity
+              style={[s.coachChip, chipStyle]}
+              onPress={() => setQuickScanQty(p => ({ ...p, [item.name]: sug.servings }))}
+              activeOpacity={0.75}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Text style={[s.coachChipTxt, { color: chipColor }]}>{chipText}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <View style={s.stepRow}>
+          <TouchableOpacity style={[s.stepBtn, !qty && s.stepBtnDim]} onPress={() => decQuickQty(item.name)} hitSlop={{ top:10, bottom:10, left:10, right:6 }} activeOpacity={qty ? 0.65 : 1}>
+            <Text style={[s.stepIcon, !qty && s.stepIconDim]}>−</Text>
+          </TouchableOpacity>
+          <Text style={[s.stepCount, active && s.stepCountActive]}>{qty ? qty.toFixed(1) : '0'}</Text>
+          <TouchableOpacity style={s.stepBtn} onPress={() => incQuickQty(item.name)} hitSlop={{ top:10, bottom:10, left:6, right:10 }} activeOpacity={0.65}>
+            <Text style={s.stepIcon}>+</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   // ═══════════════════════════════════════════════════════════════════════════
   // HOME
   // ═══════════════════════════════════════════════════════════════════════════
+  // ─── Onboarding gate ─────────────────────────────────────────────────────
+  if (onboardingDone === null) return null; // brief AsyncStorage check — blank is fine
+  if (!onboardingDone) return (
+    <Onboarding
+      onComplete={(protein) => {
+        setTargetP(protein);
+        AsyncStorage.setItem(PROTEIN_GOAL_KEY, protein).catch(() => {});
+        setOnboardingDone(true);
+      }}
+    />
+  );
+
   const hasTargets = (parseFloat(targetP)||0) + (parseFloat(targetC)||0) + (parseFloat(targetF)||0) > 0;
 
   if (view === 'home') return (
     <SafeAreaView style={s.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView contentContainerStyle={s.homeScroll} keyboardShouldPersistTaps="handled">
@@ -630,6 +846,7 @@ export default function App() {
               <Text style={s.homeTitle}>MacroDecide</Text>
               <Text style={s.homeSub}>What are you targeting this meal?</Text>
             </View>
+
             <View style={s.homeCard}>
               {[
                 { label: 'Protein (g)', val: targetP, set: setTargetP },
@@ -651,6 +868,38 @@ export default function App() {
               onPress={hasTargets ? goFeed : undefined} activeOpacity={hasTargets ? 0.85 : 1}>
               <Ionicons name="restaurant-outline" size={20} color={C.white} style={{ marginRight: 10 }} />
               <Text style={s.ctaTxt}>Find My Meal</Text>
+            </TouchableOpacity>
+
+            {/* ── OR divider ───────────────────────────────────────────── */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 14 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+              <Text style={{ marginHorizontal: 12, fontSize: 12, fontWeight: '800', color: C.muted, letterSpacing: 1 }}>OR</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+            </View>
+
+            {/* ── Scan Any Menu CTA ─────────────────────────────────────── */}
+            <TouchableOpacity
+              style={{
+                backgroundColor: C.card, borderRadius: 14, padding: 16,
+                flexDirection: 'row', alignItems: 'center', marginBottom: 8,
+                shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+              }}
+              onPress={promptQuickScan}
+              activeOpacity={0.78}
+            >
+              <View style={{
+                width: 42, height: 42, borderRadius: 10,
+                backgroundColor: 'rgba(0,122,255,0.1)',
+                alignItems: 'center', justifyContent: 'center', marginRight: 14,
+              }}>
+                <Ionicons name="camera-outline" size={22} color={C.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: C.gray, marginBottom: 2 }}>Scan Any Menu</Text>
+                <Text style={{ fontSize: 12, color: C.muted }}>Instantly get macros from any restaurant</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
             </TouchableOpacity>
 
             {/* ── Meal History ─────────────────────────────────────────── */}
@@ -781,6 +1030,253 @@ export default function App() {
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
+
+      {/* ── Quick Scan Modal ────────────────────────────────────────────── */}
+      <Modal
+        visible={showQuickScan}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => { if (!quickScanLoading) setShowQuickScan(false); }}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
+          <View style={s.header}>
+            <TouchableOpacity onPress={() => { if (!quickScanLoading) setShowQuickScan(false); }} style={s.headerIcon} activeOpacity={0.7}>
+              <Ionicons name="close-outline" size={22} color={C.accent} />
+            </TouchableOpacity>
+            <Text style={s.headerTitle}>Quick Scan</Text>
+            <TouchableOpacity onPress={promptQuickScan} style={s.headerIcon} disabled={quickScanLoading} activeOpacity={0.7}>
+              <Ionicons name="camera-outline" size={20} color={quickScanLoading ? C.muted : C.accent} />
+            </TouchableOpacity>
+          </View>
+
+          {quickScanLoading ? (
+            <View style={s.center}>
+              <ActivityIndicator size="large" color={C.accent} />
+              <Text style={s.centerTxt}>Analyzing menu photo…</Text>
+            </View>
+          ) : (
+            <>
+              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+                {/* Restaurant label input */}
+                <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 }}>
+                  <Text style={[s.inputLabel, { marginBottom: 6 }]}>Label this scan</Text>
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center',
+                    backgroundColor: C.card, borderRadius: 10,
+                    borderWidth: 1, borderColor: C.border,
+                    paddingHorizontal: 12, paddingVertical: 11,
+                  }}>
+                    <Ionicons name="restaurant-outline" size={15} color={C.muted} style={{ marginRight: 10 }} />
+                    <TextInput
+                      style={{ flex: 1, fontSize: 15, color: C.gray, fontWeight: '500' }}
+                      value={quickScanName}
+                      onChangeText={setQuickScanName}
+                      placeholder="Restaurant name (optional)"
+                      placeholderTextColor={C.muted}
+                      returnKeyType="done"
+                      onSubmitEditing={Keyboard.dismiss}
+                    />
+                  </View>
+                </View>
+
+                {/* Smart suggestion banner */}
+                {quickScanBanner && (
+                  <View style={[
+                    s.recCard, { borderLeftWidth: 4 },
+                    quickScanBanner.isWarning
+                      ? { backgroundColor: 'rgba(255,149,0,0.08)', borderColor: 'rgba(255,149,0,0.25)', borderLeftColor: '#FF9500' }
+                      : { borderLeftColor: quickScanBanner.isPerfect ? '#34C759' : C.accent },
+                  ]}>
+                    <View style={s.recHeaderRow}>
+                      <Ionicons
+                        name={quickScanBanner.isWarning ? 'warning-outline' : 'flash'} size={13}
+                        color={quickScanBanner.isWarning ? '#FF9500' : quickScanBanner.isPerfect ? '#34C759' : C.accent}
+                      />
+                      <Text style={[s.recHeaderTxt,
+                        quickScanBanner.isWarning && { color: '#FF9500' },
+                        quickScanBanner.isPerfect && { color: '#34C759' },
+                      ]}>
+                        {quickScanBanner.isWarning ? 'Cap Warning' : quickScanBanner.isPerfect ? 'Perfect Match' : 'Smart Suggestion'}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 }}>
+                      <Text style={{
+                        flex: 1, fontSize: 15, fontWeight: '800', lineHeight: 22, marginRight: 10,
+                        color: quickScanBanner.isWarning ? '#FF9500' : quickScanBanner.isPerfect ? '#34C759' : C.accent,
+                      }}>
+                        {quickScanBanner.text}
+                      </Text>
+                      <TouchableOpacity
+                        style={[s.recLogBtn, { alignSelf: 'flex-start' }, quickScanBanner.isWarning && { backgroundColor: '#FF9500' }]}
+                        onPress={() => setQuickScanQty(p => ({ ...p, [quickScanBanner.item.name]: quickScanBanner.sug.servings }))}
+                        activeOpacity={0.82}
+                      >
+                        <Text style={s.recLogBtnTxt}>Apply</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={s.recMacroTxt}>
+                      ~{quickScanBanner.projP}g P · {quickScanBanner.projC}g C · {quickScanBanner.projF}g F
+                    </Text>
+                  </View>
+                )}
+
+                {/* Match ring (appears once items are selected) */}
+                {Object.values(quickScanQty).some(q => q > 0) && (
+                  <View style={[s.matchBar, { marginHorizontal: 14, marginTop: 8, borderRadius: 14, borderWidth: 1, borderColor: '#F2F2F7' }]}>
+                    <MatchRing percentage={quickScanMatchPct} size={72} />
+                    <View style={s.barsWrap}>
+                      {[
+                        { label: 'P', val: quickScanTotals.protein, target: parseFloat(targetP)||0, color: '#007AFF' },
+                        { label: 'C', val: quickScanTotals.carbs,   target: parseFloat(targetC)||0, color: '#34C759' },
+                        { label: 'F', val: quickScanTotals.fat,      target: parseFloat(targetF)||0, color: '#FF9500' },
+                      ].map(({ label, val, target, color }) => {
+                        const pct = target > 0 ? Math.min(100, (val / target) * 100) : 0;
+                        const over = target > 0 && val > target;
+                        return (
+                          <View key={label} style={s.barRow}>
+                            <Text style={s.barLabel}>{label}</Text>
+                            <View style={s.barTrack}><View style={[s.barFill, { width: `${pct}%`, backgroundColor: over ? '#FF3B30' : color }]} /></View>
+                            <Text style={[s.barValue, over && s.barValueOver]}>{val}<Text style={s.barTarget}>/{target}g</Text></Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+
+                {/* Recommended item (pinned from banner) */}
+                {quickScanBanner && (
+                  <View style={s.section}>
+                    <Text style={[s.sectionLabel, {
+                      color: quickScanBanner.isWarning ? '#FF9500' : quickScanBanner.isPerfect ? '#34C759' : C.accent,
+                    }]}>
+                      {quickScanBanner.isWarning ? '⚠ Recommended For You' : '⚡ Recommended For You'}
+                    </Text>
+                    {renderQuickItem(quickScanBanner.item)}
+                  </View>
+                )}
+
+                {/* All remaining items */}
+                <View style={s.section}>
+                  <Text style={s.sectionLabel}>✨ All Scanned Items</Text>
+                  {quickScanItems
+                    .filter(i => i.name !== quickScanBanner?.item?.name)
+                    .sort((a, b) => {
+                      const calA = a.protein*4+(a.carbs||0)*4+(a.fat||0)*9;
+                      const calB = b.protein*4+(b.carbs||0)*4+(b.fat||0)*9;
+                      const dA = calA > 0 ? a.protein/calA : 0;
+                      const dB = calB > 0 ? b.protein/calB : 0;
+                      return dB - dA;
+                    })
+                    .map(renderQuickItem)}
+                </View>
+
+                {/* Submit to Community */}
+                <TouchableOpacity
+                  style={s.submitDbBtn}
+                  onPress={() => { setQuickScanSubmitStatus('idle'); setQuickScanSubmitError(''); setShowQuickScanSubmit(true); }}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="cloud-upload-outline" size={16} color={C.white} style={{ marginRight: 8 }} />
+                  <Text style={s.submitDbBtnTxt}>Submit to Community Database</Text>
+                </TouchableOpacity>
+
+                <View style={{ height: 120 }} />
+              </ScrollView>
+
+              {/* Log Meal bottom bar */}
+              <View style={s.confirmWrap}>
+                {Object.values(quickScanQty).some(q => q > 0) && (
+                  <View style={s.confirmSummary}>
+                    <Text style={s.confirmSummaryTxt}>
+                      {quickScanTotals.protein}g P · {quickScanTotals.carbs}g C · {quickScanTotals.fat}g F
+                    </Text>
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={[s.confirmBtn, !Object.values(quickScanQty).some(q => q > 0) && s.confirmBtnDim]}
+                  onPress={Object.values(quickScanQty).some(q => q > 0) ? confirmQuickScan : undefined}
+                  activeOpacity={Object.values(quickScanQty).some(q => q > 0) ? 0.85 : 1}
+                >
+                  <Text style={s.confirmBtnTxt}>
+                    {Object.values(quickScanQty).some(q => q > 0) ? 'Log Meal →' : 'Select items above'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {/* Community Submit Modal */}
+          <Modal visible={showQuickScanSubmit} transparent animationType="fade" onRequestClose={() => quickScanSubmitStatus !== 'loading' && setShowQuickScanSubmit(false)}>
+            <TouchableWithoutFeedback onPress={() => quickScanSubmitStatus !== 'loading' && setShowQuickScanSubmit(false)}>
+              <View style={s.modalOverlay}>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                  <View style={s.modalCard}>
+                    {quickScanSubmitStatus === 'success' ? (
+                      <>
+                        <Text style={s.modalTitle}>Submitted!</Text>
+                        <Text style={[s.modalSub, { marginBottom: 20 }]}>
+                          Thanks for contributing. Our team will review it before adding it to the community database.
+                        </Text>
+                        <TouchableOpacity style={s.modalSaveBtn} onPress={() => setShowQuickScanSubmit(false)} activeOpacity={0.85}>
+                          <Text style={s.modalSaveTxt}>Done</Text>
+                        </TouchableOpacity>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={s.modalTitle}>Submit to Community</Text>
+                        <Text style={s.modalSub}>Help other macro-conscious eaters find this spot.</Text>
+
+                        <Text style={s.modalFieldLabel}>Restaurant Name</Text>
+                        <TextInput
+                          style={s.modalNameInput}
+                          value={quickScanName}
+                          onChangeText={setQuickScanName}
+                          placeholder="e.g. Joe's Diner"
+                          placeholderTextColor={C.muted}
+                          returnKeyType="next"
+                        />
+
+                        <Text style={s.modalFieldLabel}>Street Address / Location</Text>
+                        <TextInput
+                          style={s.modalNameInput}
+                          value={quickScanAddr}
+                          onChangeText={setQuickScanAddr}
+                          placeholder="e.g. 123 Main St, Austin TX 78701"
+                          placeholderTextColor={C.muted}
+                          returnKeyType="done"
+                          onSubmitEditing={Keyboard.dismiss}
+                        />
+
+                        <Text style={s.submitItemCount}>{quickScanItems.length} item{quickScanItems.length !== 1 ? 's' : ''} · will be marked pending review</Text>
+                        {!!quickScanSubmitError && <Text style={s.submitErrorTxt}>{quickScanSubmitError}</Text>}
+
+                        <View style={s.modalBtnRow}>
+                          <TouchableOpacity style={s.modalCancelBtn} onPress={() => setShowQuickScanSubmit(false)} activeOpacity={0.75}>
+                            <Text style={s.modalCancelTxt}>Cancel</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[s.modalSaveBtn, quickScanSubmitStatus === 'loading' && { opacity: 0.6 }]}
+                            onPress={handleQuickScanSubmit}
+                            disabled={quickScanSubmitStatus === 'loading'}
+                            activeOpacity={0.85}
+                          >
+                            {quickScanSubmitStatus === 'loading'
+                              ? <ActivityIndicator size="small" color={C.white} />
+                              : <Text style={s.modalSaveTxt}>Submit →</Text>
+                            }
+                          </TouchableOpacity>
+                        </View>
+                      </>
+                    )}
+                  </View>
+                </TouchableWithoutFeedback>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 
@@ -833,7 +1329,7 @@ export default function App() {
       );
 
     const renderFeedCard = (r, i) => {
-      const bg = r.bestPct == null ? '#444' : r.bestPct >= 80 ? C.accent : r.bestPct >= 50 ? '#D4860A' : '#444';
+      const bg = r.bestPct == null ? '#8E8E93' : r.bestPct >= 80 ? '#34C759' : r.bestPct >= 50 ? '#FF9500' : '#8E8E93';
       return (
         <TouchableOpacity key={`${r.name}-${i}`} style={s.feedCard} onPress={() => openDetail(r)} activeOpacity={0.78}>
           <View style={s.feedThumb}><Text style={s.feedInitials}>{r.name?.[0]?.toUpperCase() ?? '?'}</Text></View>
@@ -850,14 +1346,14 @@ export default function App() {
                 ? <Text style={s.feedSub}>{r.distance < 0.1 ? 'Nearby' : `${r.distance.toFixed(1)} mi`}</Text>
                 : null}
           </View>
-          <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.25)" />
+          <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
         </TouchableOpacity>
       );
     };
 
     return (
       <SafeAreaView style={s.root}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <View style={s.header}>
           <TouchableOpacity onPress={goHome} style={s.headerIcon} activeOpacity={0.7}>
             <Ionicons name="arrow-back-outline" size={20} color={C.accent} />
@@ -875,7 +1371,7 @@ export default function App() {
             onPress={() => setFeedMode('near_me')}
             activeOpacity={0.8}
           >
-            <Ionicons name="location-outline" size={13} color={feedMode === 'near_me' ? C.white : C.muted} style={{ marginRight: 5 }} />
+            <Ionicons name="location-outline" size={13} color={feedMode === 'near_me' ? C.gray : C.muted} style={{ marginRight: 5 }} />
             <Text style={[s.feedModeTxt, feedMode === 'near_me' && s.feedModeTxtActive]}>Near Me</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -883,7 +1379,7 @@ export default function App() {
             onPress={() => { setFeedMode('plan_ahead'); setFeedQuery(''); }}
             activeOpacity={0.8}
           >
-            <Ionicons name="calendar-outline" size={13} color={feedMode === 'plan_ahead' ? C.white : C.muted} style={{ marginRight: 5 }} />
+            <Ionicons name="calendar-outline" size={13} color={feedMode === 'plan_ahead' ? C.gray : C.muted} style={{ marginRight: 5 }} />
             <Text style={[s.feedModeTxt, feedMode === 'plan_ahead' && s.feedModeTxtActive]}>Search Popular Chains</Text>
           </TouchableOpacity>
         </View>
@@ -905,7 +1401,7 @@ export default function App() {
                 loadFeed(true);
               }}
               minimumTrackTintColor={C.accent}
-              maximumTrackTintColor='rgba(255,255,255,0.15)'
+              maximumTrackTintColor='#E5E5EA'
               thumbTintColor={C.accent}
             />
             <Text style={s.radiusValue}>{searchRadius} mi</Text>
@@ -987,9 +1483,9 @@ export default function App() {
 
       const sug = tP > 0 ? suggestServing(item, { protein: tP, carbs: tC, fat: tF }) : null;
       const chipStyle = sug?.limitedBy
-        ? { borderColor: 'rgba(255,183,77,0.35)', backgroundColor: 'rgba(255,183,77,0.1)' }
-        : { borderColor: 'rgba(0,121,107,0.4)',   backgroundColor: 'rgba(0,121,107,0.1)' };
-      const chipColor = sug?.limitedBy ? '#ffb74d' : '#00796b';
+        ? { borderColor: 'rgba(255,149,0,0.35)', backgroundColor: 'rgba(255,149,0,0.08)' }
+        : { borderColor: 'rgba(0,122,255,0.3)',  backgroundColor: 'rgba(0,122,255,0.06)' };
+      const chipColor = sug?.limitedBy ? '#FF9500' : '#007AFF';
       const chipText  = sug
         ? sug.limitedBy
           ? `⚠ ×${sug.servings.toFixed(1)} (${sug.limitedBy} cap) → ${sug.projP}g P`
@@ -1060,7 +1556,7 @@ export default function App() {
 
     return (
       <SafeAreaView style={s.root}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <View style={s.header}>
           <TouchableOpacity onPress={() => setView('feed')} style={s.headerIcon} activeOpacity={0.7}>
             <Ionicons name="arrow-back-outline" size={20} color={C.accent} />
@@ -1076,16 +1572,16 @@ export default function App() {
           <MatchRing percentage={matchPct} size={80} />
           <View style={s.barsWrap}>
             {[
-              { label: 'P', val: totals.protein, target: tP, color: '#4fc3f7' },
-              { label: 'C', val: totals.carbs,   target: tC, color: '#aed581' },
-              { label: 'F', val: totals.fat,      target: tF, color: '#ffb74d' },
+              { label: 'P', val: totals.protein, target: tP, color: '#007AFF' },
+              { label: 'C', val: totals.carbs,   target: tC, color: '#34C759' },
+              { label: 'F', val: totals.fat,      target: tF, color: '#FF9500' },
             ].map(({ label, val, target, color }) => {
               const pct = target > 0 ? Math.min(100, (val / target) * 100) : 0;
               const over = target > 0 && val > target;
               return (
                 <View key={label} style={s.barRow}>
                   <Text style={s.barLabel}>{label}</Text>
-                  <View style={s.barTrack}><View style={[s.barFill, { width: `${pct}%`, backgroundColor: over ? '#ff6b6b' : color }]} /></View>
+                  <View style={s.barTrack}><View style={[s.barFill, { width: `${pct}%`, backgroundColor: over ? '#FF3B30' : color }]} /></View>
                   <Text style={[s.barValue, over && s.barValueOver]}>{val}<Text style={s.barTarget}>/{target}g</Text></Text>
                 </View>
               );
@@ -1098,8 +1594,8 @@ export default function App() {
         <View style={s.scanRow}>
           <TouchableOpacity style={s.scanBtn} onPress={promptScan} disabled={ocrLoading} activeOpacity={0.75}>
             {ocrLoading
-              ? <ActivityIndicator size="small" color="#4fc3f7" />
-              : <><Ionicons name="camera-outline" size={14} color="#4fc3f7" style={{ marginRight: 6 }} /><Text style={s.scanBtnTxt}>Scan Physical Menu</Text></>
+              ? <ActivityIndicator size="small" color="#007AFF" />
+              : <><Ionicons name="camera-outline" size={14} color="#007AFF" style={{ marginRight: 6 }} /><Text style={s.scanBtnTxt}>Scan Physical Menu</Text></>
             }
           </TouchableOpacity>
         </View>
@@ -1141,18 +1637,18 @@ export default function App() {
                     s.recCard,
                     { borderLeftWidth: 4 },
                     instructionBanner.isWarning
-                      ? { backgroundColor: 'rgba(255,183,77,0.08)', borderColor: 'rgba(255,183,77,0.25)', borderLeftColor: '#ffb74d' }
-                      : { borderLeftColor: instructionBanner.isPerfect ? '#00e676' : C.accent },
+                      ? { backgroundColor: 'rgba(255,149,0,0.08)', borderColor: 'rgba(255,149,0,0.25)', borderLeftColor: '#FF9500' }
+                      : { borderLeftColor: instructionBanner.isPerfect ? '#34C759' : C.accent },
                   ]}>
                     <View style={s.recHeaderRow}>
                       <Ionicons
                         name={instructionBanner.isWarning ? 'warning-outline' : 'flash'}
                         size={13}
-                        color={instructionBanner.isWarning ? '#ffb74d' : instructionBanner.isPerfect ? '#00e676' : C.accent}
+                        color={instructionBanner.isWarning ? '#FF9500' : instructionBanner.isPerfect ? '#34C759' : C.accent}
                       />
                       <Text style={[s.recHeaderTxt,
-                        instructionBanner.isWarning && { color: '#ffb74d' },
-                        instructionBanner.isPerfect && { color: '#00e676' },
+                        instructionBanner.isWarning && { color: '#FF9500' },
+                        instructionBanner.isPerfect && { color: '#34C759' },
                       ]}>
                         {instructionBanner.isWarning ? 'Cap Warning' : instructionBanner.isPerfect ? 'Perfect Match' : 'Smart Suggestion'}
                       </Text>
@@ -1160,12 +1656,12 @@ export default function App() {
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 }}>
                       <Text style={{
                         flex: 1, fontSize: 15, fontWeight: '800', lineHeight: 22, marginRight: 10,
-                        color: instructionBanner.isWarning ? '#ffb74d' : instructionBanner.isPerfect ? '#00e676' : '#00796b',
+                        color: instructionBanner.isWarning ? '#FF9500' : instructionBanner.isPerfect ? '#34C759' : C.accent,
                       }}>
                         {instructionBanner.text}
                       </Text>
                       <TouchableOpacity
-                        style={[s.recLogBtn, { alignSelf: 'flex-start' }, instructionBanner.isWarning && { backgroundColor: '#d4860a' }]}
+                        style={[s.recLogBtn, { alignSelf: 'flex-start' }, instructionBanner.isWarning && { backgroundColor: '#FF9500' }]}
                         onPress={() => setItemQty(p => ({ ...p, [instructionBanner.item.name]: instructionBanner.sug.servings }))}
                         activeOpacity={0.82}
                       >
@@ -1180,7 +1676,7 @@ export default function App() {
                 {instructionBanner && (
                   <View style={s.section}>
                     <Text style={[s.sectionLabel, {
-                      color: instructionBanner.isWarning ? '#ffb74d' : instructionBanner.isPerfect ? '#00e676' : C.accent,
+                      color: instructionBanner.isWarning ? '#FF9500' : instructionBanner.isPerfect ? '#34C759' : C.accent,
                     }]}>
                       {instructionBanner.isWarning ? '⚠ Recommended For You' : '⚡ Recommended For You'}
                     </Text>
@@ -1253,18 +1749,18 @@ export default function App() {
                         s.recCard,
                         { borderLeftWidth: 4 },
                         uploadedBanner.isWarning
-                          ? { backgroundColor: 'rgba(255,183,77,0.08)', borderColor: 'rgba(255,183,77,0.25)', borderLeftColor: '#ffb74d' }
-                          : { borderLeftColor: uploadedBanner.isPerfect ? '#00e676' : C.accent },
+                          ? { backgroundColor: 'rgba(255,149,0,0.08)', borderColor: 'rgba(255,149,0,0.25)', borderLeftColor: '#FF9500' }
+                          : { borderLeftColor: uploadedBanner.isPerfect ? '#34C759' : C.accent },
                       ]}>
                         <View style={s.recHeaderRow}>
                           <Ionicons
                             name={uploadedBanner.isWarning ? 'warning-outline' : 'flash'}
                             size={13}
-                            color={uploadedBanner.isWarning ? '#ffb74d' : uploadedBanner.isPerfect ? '#00e676' : C.accent}
+                            color={uploadedBanner.isWarning ? '#FF9500' : uploadedBanner.isPerfect ? '#34C759' : C.accent}
                           />
                           <Text style={[s.recHeaderTxt,
-                            uploadedBanner.isWarning && { color: '#ffb74d' },
-                            uploadedBanner.isPerfect && { color: '#00e676' },
+                            uploadedBanner.isWarning && { color: '#FF9500' },
+                            uploadedBanner.isPerfect && { color: '#34C759' },
                           ]}>
                             {uploadedBanner.isWarning ? 'Cap Warning' : uploadedBanner.isPerfect ? 'Perfect Match' : 'Smart Suggestion'}
                           </Text>
@@ -1272,12 +1768,12 @@ export default function App() {
                         <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 }}>
                           <Text style={{
                             flex: 1, fontSize: 15, fontWeight: '800', lineHeight: 22, marginRight: 10,
-                            color: uploadedBanner.isWarning ? '#ffb74d' : uploadedBanner.isPerfect ? '#00e676' : '#00796b',
+                            color: uploadedBanner.isWarning ? '#FF9500' : uploadedBanner.isPerfect ? '#34C759' : C.accent,
                           }}>
                             {uploadedBanner.text}
                           </Text>
                           <TouchableOpacity
-                            style={[s.recLogBtn, { alignSelf: 'flex-start' }, uploadedBanner.isWarning && { backgroundColor: '#d4860a' }]}
+                            style={[s.recLogBtn, { alignSelf: 'flex-start' }, uploadedBanner.isWarning && { backgroundColor: '#FF9500' }]}
                             onPress={() => setItemQty(p => ({ ...p, [uploadedBanner.item.name]: uploadedBanner.sug.servings }))}
                             activeOpacity={0.82}
                           >
@@ -1292,7 +1788,7 @@ export default function App() {
                     {uploadedBanner && (
                       <View style={s.section}>
                         <Text style={[s.sectionLabel, {
-                          color: uploadedBanner.isWarning ? '#ffb74d' : uploadedBanner.isPerfect ? '#00e676' : C.accent,
+                          color: uploadedBanner.isWarning ? '#FF9500' : uploadedBanner.isPerfect ? '#34C759' : C.accent,
                         }]}>
                           {uploadedBanner.isWarning ? '⚠ Recommended For You' : '⚡ Recommended For You'}
                         </Text>

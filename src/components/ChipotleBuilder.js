@@ -108,7 +108,7 @@ export default function ChipotleBuilder({ menuItems, itemQty, onInc, onDec }) {
             <Switch
               value={isDouble}
               onValueChange={handleDoubleToggle}
-              trackColor={{ false: 'rgba(255,255,255,0.15)', true: C.accent }}
+              trackColor={{ false: '#E5E5EA', true: C.accent }}
               thumbColor={C.white}
             />
           </View>
@@ -135,11 +135,11 @@ const bs = StyleSheet.create({
   stepHeader:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, marginBottom: 2 },
   doubleRow:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
   doubleTxt:       { fontSize: 13, fontWeight: '600', color: C.muted },
-  optionBtn:       { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.04)', marginBottom: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  optionBtnActive: { backgroundColor: 'rgba(0,121,107,0.18)', borderColor: 'rgba(0,121,107,0.5)' },
-  dot:             { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)', marginRight: 12 },
+  optionBtn:       { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.card, marginBottom: 6, borderWidth: 1, borderColor: '#F2F2F7', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 },
+  optionBtnActive: { backgroundColor: 'rgba(0,122,255,0.06)', borderColor: 'rgba(0,122,255,0.2)' },
+  dot:             { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: '#D1D1D6', marginRight: 12 },
   dotActive:       { backgroundColor: C.accent, borderColor: C.accent },
   optionName:      { fontSize: 14, fontWeight: '600', color: C.muted },
-  optionNameActive:{ color: C.white },
+  optionNameActive:{ color: C.gray },
   optionMacro:     { fontSize: 11, color: C.muted, marginTop: 2 },
 });

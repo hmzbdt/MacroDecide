@@ -9,7 +9,7 @@ export default function MatchRing({ percentage, size = 120 }) {
   const clamped          = Math.min(100, Math.max(0, percentage));
   const strokeDashoffset = circumference - (clamped / 100) * circumference;
 
-  const color = clamped >= 70 ? '#66bb6a' : clamped >= 50 ? '#ffa726' : '#ef5350';
+  const color = clamped >= 70 ? '#34C759' : clamped >= 50 ? '#FF9500' : '#FF3B30';
 
   // The safe text area is the full inner circle diameter.
   // adjustsFontSizeToFit handles any overflow — no manual padding reduction needed.
@@ -24,7 +24,7 @@ export default function MatchRing({ percentage, size = 120 }) {
       <Svg width={size} height={size}>
         <Circle
           cx={size / 2} cy={size / 2} r={radius}
-          stroke="rgba(255,255,255,0.1)"
+          stroke="#E5E5EA"
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   matchLabel: {
-    color: '#8a8a8a',
+    color: '#86868B',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginTop: 2,
