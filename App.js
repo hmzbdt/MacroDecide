@@ -23,6 +23,10 @@ import ChipotleBuilder                                       from './src/compone
 import { s, C }                                              from './src/styles/appStyles';
 import Onboarding, { ONBOARDING_KEY }                        from './src/components/Onboarding';
 import Slider                                                from '@react-native-community/slider';
+import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { db }                                                from './src/config/firebase';
+import { AuthProvider, useAuth }                             from './src/context/AuthContext';
+import LoginScreen                                           from './src/components/LoginScreen';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CACHE_PREFIX   = 'menu_v2_';
@@ -173,7 +177,7 @@ function groupByDayAndRestaurant(entries) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-export default function App() {
+function AppInner() {
 
   // ── View stack: 'home' | 'feed' | 'detail' ───────────────────────────────
   const [view, setView] = useState('home');
@@ -217,8 +221,12 @@ export default function App() {
   const [verifiedIds,   setVerifiedIds]   = useState(new Set());
   const [activeMenuTab, setActiveMenuTab] = useState('official');
 
+  // ── Auth ─────────────────────────────────────────────────────────────────
+  const { user, loading: authLoading, isAdmin, logout } = useAuth();
+
   // ── Meal history ──────────────────────────────────────────────────────────
-  const [mealHistory, setMealHistory] = useState([]);
+  const [mealHistory,     setMealHistory]     = useState([]);
+  const [historyLoading,  setHistoryLoading]  = useState(false);
   const [expandedMealIds, setExpandedMealIds] = useState(new Set());
 
   // ── Quick Scan (home screen universal scanner) ────────────────────────────
@@ -240,6 +248,7 @@ export default function App() {
 
   // ── Onboarding gate ──────────────────────────────────────────────────────
   const [onboardingDone, setOnboardingDone] = useState(null); // null = loading
+  const [pendingProtein, setPendingProtein] = useState(null); // protein from onboarding, cleared on auth
 
   // ── Detail: inline macro edit modal ──────────────────────────────────────
   const [editItem, setEditItem] = useState(null);
@@ -255,12 +264,25 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  // ─── Load meal history on mount ───────────────────────────────────────────
+  // ─── Load meal history from Firestore ────────────────────────────────────
   useEffect(() => {
-    AsyncStorage.getItem(HISTORY_KEY)
-      .then(raw => { if (raw) setMealHistory(JSON.parse(raw)); })
-      .catch(() => {});
-  }, []);
+    if (!user) return;
+    setHistoryLoading(true);
+    const q = query(
+      collection(db, 'meal_history'),
+      where('uid', '==', user.uid),
+      orderBy('timestamp', 'desc'),
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setMealHistory(snap.docs.map(d => ({ ...d.data(), id: d.id })));
+        setHistoryLoading(false);
+      },
+      () => setHistoryLoading(false),
+    );
+    return unsub;
+  }, [user]);
 
   // ─── Onboarding check ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -268,6 +290,9 @@ export default function App() {
       .then(val => setOnboardingDone(val === 'true'))
       .catch(() => setOnboardingDone(true)); // fail open — never block the app
   }, []);
+
+  // ─── Clear pendingProtein once the user is authenticated ─────────────────
+  useEffect(() => { if (user) setPendingProtein(null); }, [user]);
 
   // ─── Load persisted protein goal (set during onboarding) ─────────────────
   useEffect(() => {
@@ -579,7 +604,7 @@ export default function App() {
     setSubmitStatus('loading');
     setSubmitError('');
     try {
-      await submitMenuToCommunity({ restaurantName: submitRestName, address: submitAddr, items: ocrItems });
+      await submitMenuToCommunity({ restaurantName: submitRestName, address: submitAddr, items: ocrItems, uid: user?.uid });
       setSubmitStatus('success');
     } catch (err) {
       setSubmitStatus('error');
@@ -657,11 +682,13 @@ export default function App() {
       return acc;
     }, []);
     if (!newEntries.length) return;
-    const updated = [...newEntries, ...mealHistory];
-    setMealHistory(updated);
-    AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated)).catch(() => {});
+    if (user) {
+      newEntries.forEach(e =>
+        addDoc(collection(db, 'meal_history'), { ...e, uid: user.uid }),
+      );
+    }
     setView('home');
-  }, [menuItems, ocrItems, itemQty, selName, mealHistory]);
+  }, [menuItems, ocrItems, itemQty, selName, user]);
 
   const deleteHistoryEntry = useCallback((id) => {
     Alert.alert('Delete Entry', 'Remove this meal from history?', [
@@ -669,15 +696,12 @@ export default function App() {
       {
         text: 'Delete', style: 'destructive',
         onPress: () => {
-          setMealHistory(prev => {
-            const updated = prev.filter(e => e.id !== id);
-            AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated)).catch(() => {});
-            return updated;
-          });
+          setMealHistory(prev => prev.filter(e => e.id !== id)); // optimistic
+          if (user) deleteDoc(doc(db, 'meal_history', id)).catch(console.error);
         },
       },
     ]);
-  }, []);
+  }, [user]);
 
   // ─── Quick Scan handlers ──────────────────────────────────────────────────
   const quickScanOcr = useCallback(async (base64) => {
@@ -747,19 +771,21 @@ export default function App() {
     if (!newEntries.length) return;
     if (quickScanName.trim())
       AsyncStorage.setItem(`${UPL_PREFIX}${quickScanName.trim()}`, JSON.stringify(quickScanItems)).catch(() => {});
-    const updated = [...newEntries, ...mealHistory];
-    setMealHistory(updated);
-    AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated)).catch(() => {});
+    if (user) {
+      newEntries.forEach(e =>
+        addDoc(collection(db, 'meal_history'), { ...e, uid: user.uid }),
+      );
+    }
     setShowQuickScan(false);
     setQuickScanItems([]); setQuickScanQty({});
-  }, [quickScanItems, quickScanQty, quickScanName, mealHistory]);
+  }, [quickScanItems, quickScanQty, quickScanName, user]);
 
   const handleQuickScanSubmit = async () => {
     if (!quickScanName.trim()) { setQuickScanSubmitError('Restaurant name is required.'); return; }
     if (!quickScanAddr.trim()) { setQuickScanSubmitError('Address is required.'); return; }
     setQuickScanSubmitStatus('loading'); setQuickScanSubmitError('');
     try {
-      await submitMenuToCommunity({ restaurantName: quickScanName.trim(), address: quickScanAddr.trim(), items: quickScanItems });
+      await submitMenuToCommunity({ restaurantName: quickScanName.trim(), address: quickScanAddr.trim(), items: quickScanItems, uid: user?.uid });
       AsyncStorage.setItem(`${UPL_PREFIX}${quickScanName.trim()}`, JSON.stringify(quickScanItems)).catch(() => {});
       setQuickScanSubmitStatus('success');
     } catch (err) {
@@ -823,14 +849,21 @@ export default function App() {
   // HOME
   // ═══════════════════════════════════════════════════════════════════════════
   // ─── Onboarding gate ─────────────────────────────────────────────────────
-  if (onboardingDone === null) return null; // brief AsyncStorage check — blank is fine
+  if (onboardingDone === null || authLoading) return null;
   if (!onboardingDone) return (
     <Onboarding
       onComplete={(protein) => {
         setTargetP(protein);
+        setPendingProtein(protein);
         AsyncStorage.setItem(PROTEIN_GOAL_KEY, protein).catch(() => {});
         setOnboardingDone(true);
       }}
+    />
+  );
+  if (!user) return (
+    <LoginScreen
+      initialMode={pendingProtein !== null ? 'signup' : 'signin'}
+      pendingProtein={pendingProtein}
     />
   );
 
@@ -902,6 +935,32 @@ export default function App() {
               <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
             </TouchableOpacity>
 
+            {/* ── Admin Panel (isAdmin only) ───────────────────────────── */}
+            {isAdmin && (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'rgba(255,149,0,0.07)', borderRadius: 14,
+                  padding: 16, flexDirection: 'row', alignItems: 'center',
+                  marginBottom: 8, borderWidth: 1, borderColor: 'rgba(255,149,0,0.18)',
+                }}
+                activeOpacity={0.78}
+              >
+                <View style={{
+                  width: 42, height: 42, borderRadius: 10,
+                  backgroundColor: 'rgba(255,149,0,0.15)',
+                  alignItems: 'center', justifyContent: 'center', marginRight: 14,
+                }}>
+                  <Ionicons name="shield-checkmark-outline" size={22} color="#FF9500" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#FF9500', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>Admin</Text>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: C.gray, marginBottom: 1 }}>Community Review</Text>
+                  <Text style={{ fontSize: 12, color: C.muted }}>Pending submissions await moderation</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+              </TouchableOpacity>
+            )}
+
             {/* ── Meal History ─────────────────────────────────────────── */}
             <View style={s.historyHeader}>
               <Text style={s.historySectionLabel}>Meal History</Text>
@@ -912,7 +971,9 @@ export default function App() {
               )}
             </View>
 
-            {mealHistory.length === 0 ? (
+            {historyLoading ? (
+              <ActivityIndicator color={C.muted} style={{ marginTop: 20 }} />
+            ) : mealHistory.length === 0 ? (
               <View style={s.historyEmpty}>
                 <Ionicons name="time-outline" size={32} color={C.muted} />
                 <Text style={s.historyEmptyTxt}>{'No meals logged yet.\nConfirm a meal to see it here.'}</Text>
@@ -1026,7 +1087,50 @@ export default function App() {
                 </View>
               ))
             )}
-            <View style={{ height: 32 }} />
+            {/* ── Account Footer ───────────────────────────────────────── */}
+            <View style={{ marginTop: 28, marginBottom: 8 }}>
+              <Text style={{
+                fontSize: 10, fontWeight: '800', color: C.muted,
+                letterSpacing: 1.2, textTransform: 'uppercase',
+                marginBottom: 10, paddingHorizontal: 2,
+              }}>
+                Account
+              </Text>
+
+              <View style={{
+                backgroundColor: C.card, borderRadius: 14,
+                borderWidth: 1, borderColor: '#F2F2F7',
+                shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05, shadowRadius: 8, elevation: 1,
+                overflow: 'hidden',
+              }}>
+                {/* Email display row */}
+                <View style={{
+                  paddingHorizontal: 16, paddingVertical: 14,
+                  borderBottomWidth: 1, borderBottomColor: '#F2F2F7',
+                }}>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: C.muted, marginBottom: 3 }}>
+                    Signed in as
+                  </Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#1D1D1F' }}>
+                    {user?.email ?? '—'}
+                  </Text>
+                </View>
+
+                {/* Sign Out row */}
+                <TouchableOpacity
+                  onPress={logout}
+                  activeOpacity={0.65}
+                  style={{ paddingHorizontal: 16, paddingVertical: 16 }}
+                >
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#FF3B30' }}>
+                    Sign Out
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={{ height: 40 }} />
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -1942,4 +2046,12 @@ export default function App() {
   }
 
   return null;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
+  );
 }

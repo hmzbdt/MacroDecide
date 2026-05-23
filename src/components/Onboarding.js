@@ -4,10 +4,10 @@ import {
   SafeAreaView, Dimensions, KeyboardAvoidingView, Platform,
   TouchableWithoutFeedback, Keyboard,
 } from 'react-native';
-import { Ionicons }   from '@expo/vector-icons';
-import { StatusBar }  from 'expo-status-bar';
-import AsyncStorage   from '@react-native-async-storage/async-storage';
-import { C }          from '../styles/appStyles';
+import { Ionicons }  from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import AsyncStorage  from '@react-native-async-storage/async-storage';
+import { C }         from '../styles/appStyles';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -15,9 +15,9 @@ export const ONBOARDING_KEY = '@md_onboarding_done';
 
 const FREQ_OPTIONS = [
   { id: 'rarely',       label: 'Rarely',       sub: '1–2× a month' },
-  { id: 'socially',     label: 'Socially',     sub: '1–2× a week'  },
-  { id: 'frequently',   label: 'Frequently',   sub: '3–5× a week'  },
-  { id: 'almost_daily', label: 'Almost Daily', sub: '5×+ a week'   },
+  { id: 'socially',     label: 'Socially',      sub: '1–2× a week'  },
+  { id: 'frequently',   label: 'Frequently',    sub: '3–5× a week'  },
+  { id: 'almost_daily', label: 'Almost Daily',  sub: '5×+ a week'   },
 ];
 
 export default function Onboarding({ onComplete }) {
@@ -47,7 +47,6 @@ export default function Onboarding({ onComplete }) {
     <SafeAreaView style={ob.root}>
       <StatusBar style="dark" />
 
-      {/* ── Horizontal pager ────────────────────────────────────────────── */}
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -58,9 +57,7 @@ export default function Onboarding({ onComplete }) {
         style={{ flex: 1 }}
       >
 
-        {/* ────────────────────────────────────────────────────────────────
-            Screen 1 · The Hook
-        ──────────────────────────────────────────────────────────────── */}
+        {/* ── Screen 0 · The Hook ────────────────────────────────────── */}
         <View style={ob.screen}>
           <View style={ob.iconRound}>
             <Ionicons name="restaurant-outline" size={32} color={C.accent} />
@@ -80,9 +77,7 @@ export default function Onboarding({ onComplete }) {
           </TouchableOpacity>
         </View>
 
-        {/* ────────────────────────────────────────────────────────────────
-            Screen 2 · The Assessment
-        ──────────────────────────────────────────────────────────────── */}
+        {/* ── Screen 1 · The Assessment ──────────────────────────────── */}
         <View style={ob.screen}>
           <Text style={[ob.headline, ob.headlineMd]}>
             {"How often do you eat out\nor order takeaway?"}
@@ -116,9 +111,7 @@ export default function Onboarding({ onComplete }) {
           </View>
         </View>
 
-        {/* ────────────────────────────────────────────────────────────────
-            Screen 3 · The Insight
-        ──────────────────────────────────────────────────────────────── */}
+        {/* ── Screen 2 · The Insight ─────────────────────────────────── */}
         <View style={ob.screen}>
           <View style={ob.iconRound}>
             <Ionicons name="stats-chart-outline" size={28} color={C.accent} />
@@ -143,16 +136,19 @@ export default function Onboarding({ onComplete }) {
           </TouchableOpacity>
         </View>
 
-        {/* ────────────────────────────────────────────────────────────────
-            Screen 4 · The Core Setup
-        ──────────────────────────────────────────────────────────────── */}
+        {/* ── Screen 3 · The Core Setup ──────────────────────────────── */}
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ width: SW, flex: 1 }}
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={ob.screen}>
-              <View style={ob.iconRound}>
+
+              <TouchableOpacity style={ob.backBtn} onPress={() => goTo(2)} activeOpacity={0.7}>
+                <Ionicons name="chevron-back" size={22} color={C.muted} />
+              </TouchableOpacity>
+
+              <View style={[ob.iconRound, { marginTop: 44 }]}>
                 <Ionicons name="barbell-outline" size={30} color={C.accent} />
               </View>
 
@@ -185,15 +181,16 @@ export default function Onboarding({ onComplete }) {
               <View style={{ flex: 1 }} />
 
               <TouchableOpacity style={ob.btn} onPress={handleComplete} activeOpacity={0.85}>
-                <Text style={ob.btnTxt}>See My Dashboard →</Text>
+                <Text style={ob.btnTxt}>Continue →</Text>
               </TouchableOpacity>
+
             </View>
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
 
       </ScrollView>
 
-      {/* ── Pill dot indicators ─────────────────────────────────────────── */}
+      {/* ── Pill dot indicators ─────────────────────────────────────── */}
       <View style={ob.dotsRow}>
         {[0, 1, 2, 3].map(i => (
           <View key={i} style={[ob.dot, page === i && ob.dotActive]} />
@@ -210,7 +207,13 @@ const ob = StyleSheet.create({
     paddingHorizontal: 28, paddingTop: 52, paddingBottom: 32,
   },
 
-  // ── Icon bubble ────────────────────────────────────────────────────────────
+  backBtn: {
+    position: 'absolute', top: 52, left: 20,
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center',
+    zIndex: 10,
+  },
+
   iconRound: {
     width: 64, height: 64, borderRadius: 18,
     backgroundColor: 'rgba(0,122,255,0.1)',
@@ -218,17 +221,13 @@ const ob = StyleSheet.create({
     marginBottom: 28, alignSelf: 'flex-start',
   },
 
-  // ── Typography ─────────────────────────────────────────────────────────────
   headline: {
     fontSize: 34, fontWeight: '800', color: C.gray,
     letterSpacing: -0.8, lineHeight: 41, marginBottom: 14,
   },
   headlineMd: { fontSize: 27, lineHeight: 34 },
-  sub: {
-    fontSize: 16, color: C.muted, lineHeight: 25, fontWeight: '400',
-  },
+  sub: { fontSize: 16, color: C.muted, lineHeight: 25, fontWeight: '400' },
 
-  // ── Assessment option cards ────────────────────────────────────────────────
   optCard: {
     backgroundColor: C.card, borderRadius: 14, padding: 18,
     flexDirection: 'row', alignItems: 'center',
@@ -236,10 +235,7 @@ const ob = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 5, elevation: 1,
   },
-  optCardActive: {
-    borderColor: C.accent,
-    backgroundColor: 'rgba(0,122,255,0.04)',
-  },
+  optCardActive:  { borderColor: C.accent, backgroundColor: 'rgba(0,122,255,0.04)' },
   optLabel:       { fontSize: 16, fontWeight: '700', color: C.gray, marginBottom: 3 },
   optLabelActive: { color: C.accent },
   optSub:         { fontSize: 13, color: C.muted },
@@ -250,7 +246,6 @@ const ob = StyleSheet.create({
   },
   optDotActive: { backgroundColor: C.accent, borderColor: C.accent },
 
-  // ── Insight card ───────────────────────────────────────────────────────────
   insightCard: {
     backgroundColor: C.card, borderRadius: 16, padding: 22, marginTop: 20,
     borderWidth: 1, borderColor: '#F2F2F7',
@@ -264,7 +259,6 @@ const ob = StyleSheet.create({
   insightDivider: { height: 1, backgroundColor: '#F2F2F7', marginVertical: 14 },
   insightBody:    { fontSize: 14, color: C.muted, lineHeight: 22 },
 
-  // ── Protein input card ─────────────────────────────────────────────────────
   inputCard: {
     backgroundColor: C.card, borderRadius: 16, padding: 22, marginTop: 24,
     borderWidth: 1, borderColor: '#F2F2F7',
@@ -281,18 +275,12 @@ const ob = StyleSheet.create({
     letterSpacing: -2, minWidth: 100,
     padding: 0, includeFontPadding: false,
   },
-  inputUnit: {
-    fontSize: 24, fontWeight: '600', color: C.muted, letterSpacing: -0.5,
-  },
-  inputNote: {
-    fontSize: 13, color: C.muted, marginTop: 12, fontWeight: '400',
-  },
+  inputUnit:  { fontSize: 24, fontWeight: '600', color: C.muted, letterSpacing: -0.5 },
+  inputNote:  { fontSize: 13, color: C.muted, marginTop: 12, fontWeight: '400' },
 
-  // ── CTA button ─────────────────────────────────────────────────────────────
   btn:    { backgroundColor: C.accent, borderRadius: 14, paddingVertical: 17, alignItems: 'center', width: '100%' },
   btnTxt: { fontSize: 17, fontWeight: '700', color: '#fff', letterSpacing: 0.2 },
 
-  // ── Pill dots ──────────────────────────────────────────────────────────────
   dotsRow:   { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingBottom: 28, gap: 7 },
   dot:       { width: 7,  height: 7, borderRadius: 3.5, backgroundColor: '#D1D1D6' },
   dotActive: { width: 22, height: 7, borderRadius: 3.5, backgroundColor: C.accent },
