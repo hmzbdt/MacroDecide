@@ -23,10 +23,11 @@ import ChipotleBuilder                                       from './src/compone
 import { s, C }                                              from './src/styles/appStyles';
 import Onboarding, { ONBOARDING_KEY }                        from './src/components/Onboarding';
 import Slider                                                from '@react-native-community/slider';
-import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { db }                                                from './src/config/firebase';
 import { AuthProvider, useAuth }                             from './src/context/AuthContext';
 import LoginScreen                                           from './src/components/LoginScreen';
+import PaywallModal                                          from './src/components/PaywallModal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CACHE_PREFIX   = 'menu_v2_';
@@ -222,7 +223,7 @@ function AppInner() {
   const [activeMenuTab, setActiveMenuTab] = useState('official');
 
   // ── Auth ─────────────────────────────────────────────────────────────────
-  const { user, loading: authLoading, isAdmin, logout } = useAuth();
+  const { user, loading: authLoading, isAdmin, logout, isPremium, scanTokens, setScanTokens } = useAuth();
 
   // ── Meal history ──────────────────────────────────────────────────────────
   const [mealHistory,     setMealHistory]     = useState([]);
@@ -239,6 +240,9 @@ function AppInner() {
   const [quickScanSubmitStatus, setQuickScanSubmitStatus] = useState('idle');
   const [quickScanSubmitError,  setQuickScanSubmitError]  = useState('');
   const [showQuickScanSubmit,   setShowQuickScanSubmit]   = useState(false);
+
+  // ── Paywall ──────────────────────────────────────────────────────────────
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const toggleMealExpand = (id) => setExpandedMealIds(prev => {
     const next = new Set(prev);
@@ -527,6 +531,10 @@ function AppInner() {
           setOcrItems(items);
           setActiveMenuTab('uploaded');
           AsyncStorage.setItem(`${UPL_PREFIX}${selName}`, JSON.stringify(items)).catch(() => {});
+          if (!isPremium && user) {
+            updateDoc(doc(db, 'users', user.uid), { scanTokens: increment(-1) }).catch(() => {});
+            setScanTokens(prev => Math.max(0, prev - 1));
+          }
         }
       } catch (err) {
         console.log('FULL_API_ERROR:', JSON.stringify(err, null, 2));
@@ -535,7 +543,7 @@ function AppInner() {
     };
 
     await doScan();
-  }, [ocrItems, selName]);
+  }, [ocrItems, selName, isPremium, user]);
 
   const pickAndScan = async (source) => {
     let base64 = null, coords = null;
@@ -577,11 +585,14 @@ function AppInner() {
     if (base64) runOcr(base64, coords);
   };
 
-  const promptScan = () => Alert.alert('Scan Menu', 'Add items from a photo:', [
-    { text: 'Take Photo',          onPress: () => pickAndScan('camera')  },
-    { text: 'Choose from Library', onPress: () => pickAndScan('library') },
-    { text: 'Cancel',              style: 'cancel' },
-  ]);
+  const promptScan = () => {
+    if (!isPremium && scanTokens <= 0) { setShowPaywall(true); return; }
+    Alert.alert('Scan Menu', 'Add items from a photo:', [
+      { text: 'Take Photo',          onPress: () => pickAndScan('camera')  },
+      { text: 'Choose from Library', onPress: () => pickAndScan('library') },
+      { text: 'Cancel',              style: 'cancel' },
+    ]);
+  };
 
   const clearOcrCache = () => {
     AsyncStorage.removeItem(`${UPL_PREFIX}${selName}`).catch(() => {});
@@ -712,14 +723,20 @@ function AppInner() {
       if (!items.length) {
         Alert.alert('Scan Failed', "Couldn't find items. Try a clearer photo.");
         setShowQuickScan(false);
-      } else { setQuickScanItems(items); }
+      } else {
+        setQuickScanItems(items);
+        if (!isPremium && user) {
+          updateDoc(doc(db, 'users', user.uid), { scanTokens: increment(-1) }).catch(() => {});
+          setScanTokens(prev => Math.max(0, prev - 1));
+        }
+      }
     } catch (err) {
       if (err instanceof MenuVisionRateLimitError)
         Alert.alert('Scan Limit Reached', 'Monthly scan limit reached. Please try again later.');
       else Alert.alert('Scan Error', err?.message ?? 'Unknown error');
       setShowQuickScan(false);
     } finally { setQuickScanLoading(false); }
-  }, []);
+  }, [isPremium, user]);
 
   const pickAndScanQuick = async (source) => {
     let base64 = null;
@@ -737,11 +754,14 @@ function AppInner() {
     if (base64) quickScanOcr(base64);
   };
 
-  const promptQuickScan = () => Alert.alert('Scan Any Menu', 'Add items from a photo:', [
-    { text: 'Take Photo',          onPress: () => pickAndScanQuick('camera')  },
-    { text: 'Choose from Library', onPress: () => pickAndScanQuick('library') },
-    { text: 'Cancel',              style: 'cancel' },
-  ]);
+  const promptQuickScan = () => {
+    if (!isPremium && scanTokens <= 0) { setShowPaywall(true); return; }
+    Alert.alert('Scan Any Menu', 'Add items from a photo:', [
+      { text: 'Take Photo',          onPress: () => pickAndScanQuick('camera')  },
+      { text: 'Choose from Library', onPress: () => pickAndScanQuick('library') },
+      { text: 'Cancel',              style: 'cancel' },
+    ]);
+  };
 
   const incQuickQty = (name) => setQuickScanQty(p => ({ ...p, [name]: Math.round(((p[name]||0)+0.5)*10)/10 }));
   const decQuickQty = (name) => setQuickScanQty(p => {
@@ -930,7 +950,13 @@ function AppInner() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 15, fontWeight: '700', color: C.gray, marginBottom: 2 }}>Scan Any Menu</Text>
-                <Text style={{ fontSize: 12, color: C.muted }}>Instantly get macros from any restaurant</Text>
+                {isPremium ? (
+                  <Text style={{ fontSize: 12, color: '#34C759', fontWeight: '600' }}>Premium · Unlimited scans</Text>
+                ) : (
+                  <Text style={{ fontSize: 12, color: scanTokens > 0 ? C.muted : '#FF3B30' }}>
+                    {scanTokens > 0 ? `${scanTokens} free scan${scanTokens === 1 ? '' : 's'} remaining` : 'No scans left · Upgrade to continue'}
+                  </Text>
+                )}
               </View>
               <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
             </TouchableOpacity>
@@ -1116,6 +1142,73 @@ function AppInner() {
                     {user?.email ?? '—'}
                   </Text>
                 </View>
+
+                {/* ── Subscription / usage row ────────────────────────── */}
+                <TouchableOpacity
+                  style={{
+                    paddingHorizontal: 16, paddingVertical: 14,
+                    borderBottomWidth: 1, borderBottomColor: '#F2F2F7',
+                    flexDirection: 'row', alignItems: 'center',
+                  }}
+                  onPress={isPremium ? undefined : () => setShowPaywall(true)}
+                  activeOpacity={isPremium ? 1 : 0.65}
+                >
+                  <View style={{
+                    width: 34, height: 34, borderRadius: 9,
+                    backgroundColor: isPremium ? 'rgba(52,199,89,0.1)' : 'rgba(0,122,255,0.08)',
+                    alignItems: 'center', justifyContent: 'center', marginRight: 12,
+                  }}>
+                    <Ionicons
+                      name={isPremium ? 'star' : 'scan-outline'}
+                      size={17}
+                      color={isPremium ? '#34C759' : C.accent}
+                    />
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#1D1D1F', marginBottom: 3 }}>
+                      {isPremium ? 'Premium Access' : 'Free Plan'}
+                    </Text>
+                    {isPremium ? (
+                      <Text style={{ fontSize: 12, color: '#34C759', fontWeight: '500' }}>
+                        Active · Unlimited scans
+                      </Text>
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <View style={{ flexDirection: 'row', gap: 4 }}>
+                          {[0, 1, 2].map(i => (
+                            <View key={i} style={{
+                              width: 8, height: 8, borderRadius: 4,
+                              backgroundColor: i < Math.min(Math.max(scanTokens, 0), 3)
+                                ? C.accent : '#D1D1D6',
+                            }} />
+                          ))}
+                        </View>
+                        <Text style={{ fontSize: 12, color: scanTokens <= 0 ? '#FF3B30' : C.muted }}>
+                          {scanTokens <= 0
+                            ? 'No scans left'
+                            : `${scanTokens} of 3 scan${scanTokens === 1 ? '' : 's'} remaining`}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {isPremium ? (
+                    <View style={{
+                      backgroundColor: 'rgba(52,199,89,0.12)', borderRadius: 7,
+                      paddingHorizontal: 9, paddingVertical: 4,
+                    }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#34C759' }}>Active</Text>
+                    </View>
+                  ) : (
+                    <View style={{
+                      backgroundColor: C.accent, borderRadius: 8,
+                      paddingHorizontal: 11, paddingVertical: 6,
+                    }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Upgrade</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
 
                 {/* Sign Out row */}
                 <TouchableOpacity
@@ -1381,6 +1474,9 @@ function AppInner() {
           </Modal>
         </SafeAreaView>
       </Modal>
+
+      {/* ── Paywall Modal ───────────────────────────────────────────── */}
+      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </SafeAreaView>
   );
 
@@ -2041,6 +2137,8 @@ function AppInner() {
           </TouchableWithoutFeedback>
         </Modal>
 
+        {/* ── Paywall Modal ─────────────────────────────────────────── */}
+        <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
       </SafeAreaView>
     );
   }

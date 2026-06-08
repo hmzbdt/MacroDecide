@@ -64,6 +64,7 @@ export default function LoginScreen({ initialMode = 'signin', pendingProtein }) 
         email:         email.trim(),
         targetProtein: parseInt(pendingProtein, 10) || 200,
         isAdmin:       false,
+        scanTokens:    3,
         createdAt:     new Date(),
       });
     } catch (err) {
