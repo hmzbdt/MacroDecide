@@ -526,20 +526,27 @@ function AppInner() {
       try {
         const existing = ocrItems.map(i => i.name);
         const items    = await analyzeMenuImage(base64, selName, existing);
-        if (!items.length) Alert.alert('Scan Failed', "Couldn't find items. Try a clearer photo.");
-        else {
-          setOcrItems(items);
-          setActiveMenuTab('uploaded');
-          AsyncStorage.setItem(`${UPL_PREFIX}${selName}`, JSON.stringify(items)).catch(() => {});
-          if (!isPremium && user) {
-            updateDoc(doc(db, 'users', user.uid), { scanTokens: increment(-1) }).catch(() => {});
-            setScanTokens(prev => Math.max(0, prev - 1));
-          }
+        if (!items.length) {
+          setOcrLoading(false);
+          Alert.alert('Scan Failed', "Couldn't find items. Try a clearer photo.");
+          return;
+        }
+        // Land payload → switch tab → stop skeleton in one batch
+        setOcrItems(items);
+        setActiveMenuTab('uploaded');
+        setOcrLoading(false);
+        AsyncStorage.setItem(`${UPL_PREFIX}${selName}`, JSON.stringify(items)).catch(() => {});
+        if (!isPremium && user) {
+          updateDoc(doc(db, 'users', user.uid), { scanTokens: increment(-1) }).catch(() => {});
+          setScanTokens(prev => Math.max(0, prev - 1));
         }
       } catch (err) {
-        console.log('FULL_API_ERROR:', JSON.stringify(err, null, 2));
-        Alert.alert('Scan Error', err?.message ?? JSON.stringify(err));
-      } finally { setOcrLoading(false); }
+        setOcrLoading(false);
+        if (err instanceof MenuVisionRateLimitError)
+          Alert.alert('Scan Limit Reached', 'Monthly scan limit reached. Please try again later.');
+        else
+          Alert.alert('Scan Error', err?.message ?? 'Scan failed. Please try again.');
+      }
     };
 
     await doScan();

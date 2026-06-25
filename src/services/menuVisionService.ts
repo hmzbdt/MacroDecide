@@ -41,27 +41,30 @@ function buildPrompt(restaurantName: string, existingItemNames: string[]): strin
 }
 
 /**
- * Strip conversational fluff and markdown fences, then slice to the outermost
- * JSON boundary so a chatty model can't break the parser.
- * Strategy: fence-strip → find first { and last } → fallback to [ … ].
+ * Strip markdown fences and conversational fluff, then slice to the outermost
+ * JSON boundary.  Priority is determined by whichever container character
+ * appears FIRST in the text — this prevents a bare array like [{…},{…}] from
+ * being mangled when the sanitiser finds a "{" inside element 0 and slices
+ * out invalid JSON instead of the full array.
  */
 function sanitizeJsonText(raw: string): string {
   // 1. Remove markdown code fences if present
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
   const text   = (fenced ? fenced[1] : raw).trim();
 
-  // 2. Extract outermost object { … }
   const objStart = text.indexOf('{');
-  const objEnd   = text.lastIndexOf('}');
-  if (objStart !== -1 && objEnd > objStart) {
-    return text.slice(objStart, objEnd + 1);
+  const arrStart = text.indexOf('[');
+
+  // 2. Array wins when [ appears before { (or no { exists)
+  if (arrStart !== -1 && (objStart === -1 || arrStart < objStart)) {
+    const arrEnd = text.lastIndexOf(']');
+    if (arrEnd > arrStart) return text.slice(arrStart, arrEnd + 1);
   }
 
-  // 3. Fallback: extract outermost array [ … ]
-  const arrStart = text.indexOf('[');
-  const arrEnd   = text.lastIndexOf(']');
-  if (arrStart !== -1 && arrEnd > arrStart) {
-    return text.slice(arrStart, arrEnd + 1);
+  // 3. Otherwise extract outermost object { … }
+  if (objStart !== -1) {
+    const objEnd = text.lastIndexOf('}');
+    if (objEnd > objStart) return text.slice(objStart, objEnd + 1);
   }
 
   return text;
