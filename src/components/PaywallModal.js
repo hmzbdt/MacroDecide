@@ -97,19 +97,20 @@ export default function PaywallModal({ visible, onClose }) {
           </View>
 
           {/* Feature list */}
-          {[
-            { icon: 'scan-outline',             text: 'Social Freedom: Order with confidence at any restaurant' },
-            { icon: 'flash-outline',            text: 'Zero Guesswork: Instantly find the highest protein options' },
-            { icon: 'trending-up-outline',      text: 'Stay Accountable: Log your dining out history in one tap' },
-            { icon: 'shield-checkmark-outline', text: 'Pure Precision: Tailored entirely to your heavy macro targets' },
-          ].map(({ icon, text }) => (
-            <View key={text} style={pw.featureRow}>
-              <View style={pw.featureIcon}>
-                <Ionicons name={icon} size={16} color={C.accent} />
+          <View style={pw.featureList}>
+            {[
+              { tag: 'Social Freedom:',   sub: ' Order with confidence at any restaurant' },
+              { tag: 'Zero Guesswork:',   sub: ' Instantly find the highest protein options' },
+              { tag: 'Stay Accountable:', sub: ' Log your dining out history in one tap' },
+              { tag: 'Pure Precision:',   sub: ' Tailored entirely to your heavy macro targets' },
+            ].map(({ tag, sub }) => (
+              <View key={tag} style={pw.featureRow}>
+                <Text style={pw.featureTxt}>
+                  <Text style={pw.featureTag}>{tag}</Text>{sub}
+                </Text>
               </View>
-              <Text style={pw.featureTxt}>{text}</Text>
-            </View>
-          ))}
+            ))}
+          </View>
 
           {/* Plan selector */}
           <Text style={pw.plansLabel}>Choose your plan</Text>
@@ -230,17 +231,10 @@ const pw = StyleSheet.create({
   },
   tokensEmptyTxt: { fontSize: 13, fontWeight: '600', color: '#FF3B30' },
 
-  featureRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 13,
-    borderBottomWidth: 1, borderBottomColor: '#F2F2F7',
-  },
-  featureIcon: {
-    width: 34, height: 34, borderRadius: 9,
-    backgroundColor: 'rgba(0,122,255,0.08)',
-    alignItems: 'center', justifyContent: 'center', marginRight: 14,
-  },
-  featureTxt: { fontSize: 15, fontWeight: '500', color: '#1D1D1F' },
+  featureList: { paddingHorizontal: 24, marginTop: 4 },
+  featureRow:  { marginBottom: 20 },
+  featureTag:  { fontSize: 15, fontWeight: '700', color: '#1D1D1F' },
+  featureTxt:  { fontSize: 15, fontWeight: '400', color: '#1D1D1F', lineHeight: 22 },
 
   plansLabel: {
     fontSize: 11, fontWeight: '800', color: '#86868B',
