@@ -84,8 +84,9 @@ export default function PaywallModal({ visible, onClose }) {
             </View>
             <Text style={pw.headline}>Unlock Unlimited Clarity</Text>
             <Text style={pw.subtext}>
-              Hit your 200g protein goal with confidence. MacroDecide's AI scan engine
-              gives you instant macro breakdowns from any menu — no guesswork, no limits.
+              Stop overthinking the menu. Don't feel bad about your diet when eating out
+              with friends, and stop guessing your metrics at the drive-thru. Hit your
+              macro targets seamlessly while living a normal life.
             </Text>
             {scanTokens !== null && scanTokens <= 0 && (
               <View style={pw.tokensEmpty}>
@@ -97,10 +98,10 @@ export default function PaywallModal({ visible, onClose }) {
 
           {/* Feature list */}
           {[
-            { icon: 'scan-outline',             text: 'Unlimited AI menu scans' },
-            { icon: 'flash-outline',            text: 'Instant macro analysis on any photo' },
-            { icon: 'trending-up-outline',      text: 'Full meal history & protein tracking' },
-            { icon: 'shield-checkmark-outline', text: 'Powered by Gemini Vision' },
+            { icon: 'scan-outline',             text: 'Social Freedom: Order with confidence at any restaurant' },
+            { icon: 'flash-outline',            text: 'Zero Guesswork: Instantly find the highest protein options' },
+            { icon: 'trending-up-outline',      text: 'Stay Accountable: Log your dining out history in one tap' },
+            { icon: 'shield-checkmark-outline', text: 'Pure Precision: Tailored entirely to your heavy macro targets' },
           ].map(({ icon, text }) => (
             <View key={text} style={pw.featureRow}>
               <View style={pw.featureIcon}>
