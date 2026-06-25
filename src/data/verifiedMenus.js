@@ -81,32 +81,34 @@ export const VERIFIED_MENUS = {
     v('bk_oring6',  'Onion Rings (6 pack)',           'addon',   false,  4, 23, 10, true),
   ],
 
-  // Source: dominos_2026.pdf — US Domino's nutrition guide; stream flavor; 84 items extracted
+  // Source: dominos_2026.pdf — US Domino's nutrition guide; 84 items extracted
   "Domino's": [
     v('dom_chcesar',   'Chicken Caesar Salad',                 'protein', true,  19, 14,  7), // 10.0%
     v('dom_chparm',    'Chicken Parm Sandwich',                'protein', true,  24, 38, 15), //  6.0%
-    v('dom_chbr',      'Chicken Bacon Ranch Sandwich',        'protein', true,  23, 37, 22), //  5.1%
-    v('dom_sw_sp',     'Sweet & Spicy Chicken Habanero Sand', 'protein', false, 21, 44, 14), //  5.4%
-    v('dom_buf_ch',    'Buffalo Chicken Sandwich',            'protein', false, 20, 39, 20), //  4.8%
-    v('dom_htbuf_w',   'Hot Buffalo Wings (4pc)',              'protein', true,  15,  9, 20), //  5.8%
-    v('dom_mildbuf_w', 'Mild Buffalo Wings (4pc)',             'protein', true,  15, 10, 20), //  5.8%
-    v('dom_honbbq_w',  'Honey BBQ Wings (4pc)',                'protein', true,  15, 22, 20), //  4.8%
-    v('dom_garparm_w', 'Garlic Parmesan Wings (4pc)',          'protein', false, 15, 10, 34), //  3.8%
-    v('dom_mango_w',   'Sweet Mango Habanero Wings (4pc)',     'protein', false, 15, 21, 20), //  4.8%
-    v('dom_pasta_alf', 'Chicken Alfredo Pasta',                'base',    false, 24, 60, 28), //  4.1%
-    v('dom_pasta_it',  'Italian Pasta',                        'base',    false, 21, 37, 20), //  5.0%
-    v('dom_bfast_hb',  'Ham & Bacon Breakfast Pizza',          'addon',   false, 12, 22, 12),
-    v('dom_boneless',  'Boneless Chicken (4pc)',                'addon',   false,  9, 18,  7, true), //  5.3%
-    v('dom_crust_ht2', 'Hand Tossed Crust (1/2 pizza)',        'base',    false,  7, 42,  3, true),
-    v('dom_crust_ht3', 'Hand Tossed Crust (1/3 pizza)',        'base',    false,  7, 40,  3, true),
-    v('dom_crust_ht8', 'Hand Tossed Crust (1/8 pizza)',        'base',    false,  4, 21,  2, true),
-    v('dom_crust_ny',  'New York Style Crust (1/6 pizza)',     'base',    false,  4, 20,  2, true),
-    v('dom_crust_thin','Crunchy Thin Crust (1/4 pizza)',       'base',    false,  2, 15,  5, true),
-    v('dom_brd_bites', 'Garlic Bread Bites',                   'addon',   false,  5, 27,  9, true),
-    v('dom_gar_knot',  'Stuffed Cheesy Bread',                 'addon',   false,  5, 15,  8, true),
-    v('dom_cin_bites', 'Cinnamon Bread Bites',                 'addon',   false,  5, 30,  9, true),
-    v('dom_choc_lava', 'Chocolate Lava Crunch Cake',           'addon',   false,  4, 47, 17, true),
-    v('dom_sal_gdn',   'Classic Garden Salad',                 'addon',   false,  3,  8,  4, true),
+    v('dom_chbr',      'Chicken Bacon Ranch Sandwich',         'protein', true,  23, 37, 22), //  5.1%
+    v('dom_buf_ranch', 'Buffalo Ranch Sandwich',               'protein', true,  23, 39, 30), //  4.7%
+    v('dom_bac_ched',  'Bacon Cheddar Sandwich',               'protein', false, 23, 48, 24), //  4.7%
+    v('dom_sw_sp',     'Sweet & Spicy Chicken Habanero Sand',  'protein', false, 21, 44, 14), //  5.4%
+    v('dom_buf_ch',    'Buffalo Chicken Sandwich',             'protein', false, 20, 39, 20), //  4.8%
+    v('dom_htbuf_w',   'Hot Buffalo Wings (4pc)',               'protein', true,  15,  9, 20), //  5.8%
+    v('dom_mildbuf_w', 'Mild Buffalo Wings (4pc)',              'protein', true,  15, 10, 20), //  5.8%
+    v('dom_honbbq_w',  'Honey BBQ Wings (4pc)',                 'protein', true,  15, 22, 20), //  4.8%
+    v('dom_garparm_w', 'Garlic Parmesan Wings (4pc)',           'protein', false, 15, 10, 34), //  3.8%
+    v('dom_mango_w',   'Sweet Mango Habanero Wings (4pc)',      'protein', false, 15, 21, 20), //  4.8%
+    v('dom_pasta_alf', 'Chicken Alfredo Pasta',                 'base',    false, 24, 60, 28), //  4.1%
+    v('dom_pasta_it',  'Italian Pasta',                         'base',    false, 21, 37, 20), //  5.0%
+    v('dom_bfast_hb',  'Ham & Bacon Breakfast Pizza',           'addon',   false, 12, 22, 12),
+    v('dom_boneless',  'Boneless Chicken (4pc)',                 'addon',   false,  9, 18,  7, true), //  5.3%
+    v('dom_crust_ht2', 'Hand Tossed Crust (1/2 pizza)',         'base',    false,  7, 42,  3, true),
+    v('dom_crust_ht3', 'Hand Tossed Crust (1/3 pizza)',         'base',    false,  7, 40,  3, true),
+    v('dom_crust_ht8', 'Hand Tossed Crust (1/8 pizza)',         'base',    false,  4, 21,  2, true),
+    v('dom_crust_ny',  'New York Style Crust (1/6 pizza)',      'base',    false,  4, 20,  2, true),
+    v('dom_crust_thin','Crunchy Thin Crust (1/4 pizza)',        'base',    false,  2, 15,  5, true),
+    v('dom_brd_bites', 'Garlic Bread Bites',                    'addon',   false,  5, 27,  9, true),
+    v('dom_gar_knot',  'Stuffed Cheesy Bread',                  'addon',   false,  5, 15,  8, true),
+    v('dom_cin_bites', 'Cinnamon Bread Bites',                  'addon',   false,  5, 30,  9, true),
+    v('dom_choc_lava', 'Chocolate Lava Crunch Cake',            'addon',   false,  4, 47, 17, true),
+    v('dom_sal_gdn',   'Classic Garden Salad',                  'addon',   false,  3,  8,  4, true),
   ],
 
   // Source: kfc_2026.pdf — stream flavor
@@ -129,47 +131,51 @@ export const VERIFIED_MENUS = {
     v('kfc_nug1',         'Kentucky Fried Nuggets (1pc)',        'addon',   false,  3,  1,  2, true),
   ],
 
-  // Source: starbucks_2026.pdf — ⚠️ UK Starbucks menu (croques, ciabattas — not US Frappuccinos/drinks)
-  // Verify against US Starbucks nutrition page before shipping
+  // Source: starbucks_2026.pdf — UK Starbucks menu (croques, ciabattas, wraps)
   'Starbucks': [
-    v('sbx_ch_caesar',     'Chicken & Bacon Caesar Wrap',   'protein', false, 29, 46, 27), //  5.4%
-    v('sbx_ch_honey',      'Chicken & Hot Honey Ciabatta',  'protein', false, 28, 69, 19), //  5.1%
-    v('sbx_hamcheese_cib', 'Ham & Cheese Ciabatta',         'protein', false, 27, 55, 15), //  5.8%
-    v('sbx_ch_pesto',      'Chicken Pesto Croque',          'protein', false, 25, 54, 22), //  4.8%
-    v('sbx_hamcheese_crq', 'Ham & Cheese Croque',           'protein', false, 22, 57, 14), //  5.0%
-    v('sbx_all_day_bfast', 'All Day Breakfast Ciabatta',    'base',    false, 22, 57, 21), //  4.3%
-    v('sbx_bfast_toastie', 'Breakfast Toastie',             'base',    false, 20, 52, 22), //  4.1%
-    v('sbx_sausage_bap',   'Sausage Bap',                   'base',    false, 17, 45, 23), //  3.8%
-    v('sbx_hamcheese_crs', 'Ham And Cheese Croissant',      'addon',   false, 14, 25, 16),
-    v('sbx_porridge_milk', 'Porridge (Semi-Skimmed Milk)',  'base',    false, 10, 32,  5, true),
-    v('sbx_cinn_swirl',    'Cinnamon Swirl',                'addon',   false, 11, 67,  8, true),
-    v('sbx_nuts',          'Roasted & Salted Nuts',         'addon',   false,  7,  8, 18, true),
-    v('sbx_butter_crs',    'Butter Croissant',              'addon',   false,  5, 28, 13, true),
-    v('sbx_popchips',      'Popchips',                      'addon',   false,  2, 16,  3, true),
+    v('sbx_ch_caesar',     'Chicken & Bacon Caesar Wrap',        'protein', false, 29, 46, 27), //  5.4%
+    v('sbx_ch_honey',      'Chicken & Hot Honey Ciabatta',       'protein', false, 28, 69, 19), //  5.1%
+    v('sbx_hamcheese_cib', 'Ham & Cheese Ciabatta',              'protein', false, 27, 55, 15), //  5.8%
+    v('sbx_ch_pesto',      'Chicken Pesto Croque',               'protein', false, 25, 54, 22), //  4.8%
+    v('sbx_hamcheese_crq', 'Ham & Cheese Croque',                'protein', false, 22, 57, 14), //  5.0%
+    v('sbx_kr_hwrap',      'Korean Hot Honey Chicken Wrap',      'protein', false, 21, 57, 11), //  5.4%
+    v('sbx_chorizo',       'Chorizo & Mozzarella Romana',        'protein', false, 21, 51, 14), //  5.5%
+    v('sbx_all_day_bfast', 'All Day Breakfast Ciabatta',         'base',    false, 22, 57, 21), //  4.3%
+    v('sbx_bfast_toastie', 'Breakfast Toastie',                  'base',    false, 20, 52, 22), //  4.1%
+    v('sbx_sausage_bap',   'Sausage Bap',                        'base',    false, 17, 45, 23), //  3.8%
+    v('sbx_hamcheese_crs', 'Ham And Cheese Croissant',           'addon',   false, 14, 25, 16),
+    v('sbx_porridge_milk', 'Porridge (Semi-Skimmed Milk)',       'base',    false, 10, 32,  5, true),
+    v('sbx_cinn_swirl',    'Cinnamon Swirl',                     'addon',   false, 11, 67,  8, true),
+    v('sbx_nuts',          'Roasted & Salted Nuts',              'addon',   false,  7,  8, 18, true),
+    v('sbx_butter_crs',    'Butter Croissant',                   'addon',   false,  5, 28, 13, true),
+    v('sbx_popchips',      'Popchips',                           'addon',   false,  2, 16,  3, true),
   ],
 
   // Source: tacobell_2026.pdf — ⚠️ Australian Taco Bell menu (Pulled Oats = AU vegan protein; US menu uses Black Bean/Beef)
-  // Verify against US Taco Bell nutrition page before shipping
   'Taco Bell': [
-    v('tb_gstuft_po', 'Grilled Stuft Burrito - Pulled Oats',     'protein', true,  40, 70, 26), //  6.0%
-    v('tb_gstuft_ch', 'Grilled Stuft Burrito - Grilled Chicken', 'protein', true,  34, 63, 24), //  5.6%
-    v('tb_ques_po',   'Quesadilla - Pulled Oats',                'protein', true,  33, 42, 30), //  5.7%
-    v('tb_nkd_po',    'Naked Burrito Bowl - Pulled Oats',        'protein', true,  32, 55, 19), //  6.5%
-    v('tb_ques_ch',   'Quesadilla - Grilled Chicken',            'protein', true,  31, 38, 29), //  5.7%
-    v('tb_ques_beef', 'Quesadilla - Seasoned Beef',              'protein', true,  28, 40, 32), //  4.9%
-    v('tb_nkd_ch',    'Naked Burrito Bowl - Grilled Chicken',    'protein', true,  27, 48, 17), //  6.4%
-    v('tb_gor_po',    'Cheesy Gordita Crunch - Pulled Oats',     'protein', false, 27, 42, 28), //  5.1%
-    v('tb_gor_ch',    'Cheesy Gordita Crunch - Grilled Chicken', 'protein', false, 25, 38, 27), //  5.1%
-    v('tb_nkd_beef',  'Naked Burrito Bowl - Seasoned Beef',      'protein', false, 22, 51, 24), //  4.6%
-    v('tb_vegan_gr',  'Vegan Griller',                           'base',    false, 19, 39,  8), //  6.0%
-    v('tb_meximelt',  'Mexi Melt',                               'addon',   false, 17, 17, 15),
-    v('tb_spcychgr',  'Spicy Chicken Griller',                   'addon',   false, 17, 36, 12),
-    v('tb_st_ch',     'Soft Taco - Grilled Chicken',             'protein', false, 15, 16,  7),  //  8.1%
-    v('tb_ct_ch',     'Crunchy Taco - Grilled Chicken',          'protein', false, 13,  9,  7),  //  8.8%
-    v('tb_st_beef',   'Soft Taco - Seasoned Beef',               'protein', false, 12, 17, 11),  //  5.7%
-    v('tb_ct_beef',   'Crunchy Taco - Seasoned Beef',            'protein', false, 10, 10, 11, true), //  5.8%
-    v('tb_cheesy_ru', 'Cheesy Roll Up',                          'addon',   false, 10, 16, 11, true),
-    v('tb_bblk',      'Black Beans',                             'addon',   false,  6, 16,  0, true),
+    v('tb_gstuft_po',   'Grilled Stuft Burrito - Pulled Oats',     'protein', true,  40, 70, 26), //  6.0%
+    v('tb_gstuft_ch',   'Grilled Stuft Burrito - Grilled Chicken', 'protein', true,  34, 63, 24), //  5.6%
+    v('tb_gstuft_beef', 'Grilled Stuft Burrito - Seasoned Beef',   'protein', false, 29, 66, 31), //  4.6%
+    v('tb_ques_po',     'Quesadilla - Pulled Oats',                'protein', true,  33, 42, 30), //  5.7%
+    v('tb_nkd_po',      'Naked Burrito Bowl - Pulled Oats',        'protein', true,  32, 55, 19), //  6.5%
+    v('tb_ques_ch',     'Quesadilla - Grilled Chicken',            'protein', true,  31, 38, 29), //  5.7%
+    v('tb_ques_beef',   'Quesadilla - Seasoned Beef',              'protein', true,  28, 40, 32), //  4.9%
+    v('tb_nkd_ch',      'Naked Burrito Bowl - Grilled Chicken',    'protein', true,  27, 48, 17), //  6.4%
+    v('tb_gor_po',      'Cheesy Gordita Crunch - Pulled Oats',     'protein', false, 27, 42, 28), //  5.1%
+    v('tb_gor_ch',      'Cheesy Gordita Crunch - Grilled Chicken', 'protein', false, 25, 38, 27), //  5.1%
+    v('tb_cwrap_ch',    'Crunchwrap Supreme - Grilled Chicken',    'protein', false, 23, 56, 26), //  4.7%
+    v('tb_nkd_beef',    'Naked Burrito Bowl - Seasoned Beef',      'protein', false, 22, 51, 24), //  4.6%
+    v('tb_cwrap_beef',  'Crunchwrap Supreme - Seasoned Beef',      'protein', false, 21, 57, 30), //  4.0%
+    v('tb_vegan_gr',    'Vegan Griller',                           'base',    false, 19, 39,  8), //  6.0%
+    v('tb_meximelt',    'Mexi Melt',                               'addon',   false, 17, 17, 15),
+    v('tb_spcychgr',    'Spicy Chicken Griller',                   'addon',   false, 17, 36, 12),
+    v('tb_chal_ch',     'Chalupa Supreme - Grilled Chicken',       'protein', false, 17, 33, 20), //  5.6%
+    v('tb_st_ch',       'Soft Taco - Grilled Chicken',             'protein', false, 15, 16,  7),  //  8.1%
+    v('tb_ct_ch',       'Crunchy Taco - Grilled Chicken',          'protein', false, 13,  9,  7),  //  8.8%
+    v('tb_st_beef',     'Soft Taco - Seasoned Beef',               'protein', false, 12, 17, 11),  //  5.7%
+    v('tb_ct_beef',     'Crunchy Taco - Seasoned Beef',            'protein', false, 10, 10, 11, true), //  5.8%
+    v('tb_cheesy_ru',   'Cheesy Roll Up',                          'addon',   false, 10, 16, 11, true),
+    v('tb_bblk',        'Black Beans',                             'addon',   false,  6, 16,  0, true),
   ],
 
   'Wingstop': [

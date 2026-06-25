@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { Linking, Platform } from 'react-native';
-import { GOOGLE_PLACES_API_KEY } from '../config';
+
+const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? '';
 
 // Consultant's Radius: 10 miles max search distance
 const MAX_SEARCH_RADIUS_MILES = 10;
@@ -17,27 +18,7 @@ const SPRING_TX = { latitude: 29.2130, longitude: -95.4010 };
 // 5-mile feed radius in metres
 const FEED_RADIUS_METRES = 8046.72;
 
-// Mock restaurant locations (in production, replace with Google Places API)
-const RESTAURANT_CHAINS = {
-  'Chick-fil-A': {
-    placeId: 'mock_chick_fil_a',
-    icon: 'restaurant',
-  },
-  'Wingstop': {
-    placeId: 'mock_wingstop',
-    icon: 'restaurant',
-  },
-  'Chipotle': {
-    placeId: 'mock_chipotle',
-    icon: 'restaurant',
-  },
-  'Whataburger': {
-    placeId: 'mock_whataburger',
-    icon: 'restaurant',
-    // Common in Texas/Houston area - generates closer distances
-    regionalBoost: true,
-  },
-};
+const SUPPORTED_CHAINS = ['Chick-fil-A', 'Wingstop', 'Chipotle', 'Whataburger'];
 
 /**
  * Request location permissions
@@ -116,50 +97,6 @@ function toRad(deg) {
   return deg * (Math.PI / 180);
 }
 
-/**
- * Generate mock nearby restaurant location
- * Respects the 10-mile Consultant's Radius
- * In production, replace this with Google Places API call
- */
-function generateMockLocation(userLat, userLon, restaurantName) {
-  // Check if this chain has regional boost (e.g., Whataburger in Houston)
-  const chain = RESTAURANT_CHAINS[restaurantName];
-  const hasRegionalBoost = chain?.regionalBoost || false;
-
-  // Generate random distance within the 10-mile radius
-  // Weighted toward closer distances (more realistic)
-  // Regional chains get even closer distances
-  const randomFactor = Math.random();
-  const maxDistance = hasRegionalBoost ? 4 : MAX_SEARCH_RADIUS_MILES; // Whataburger within 4 miles
-  const minDistance = hasRegionalBoost ? 0.2 : 0.3;
-  const distanceMiles = minDistance + (randomFactor * randomFactor) * (maxDistance - minDistance);
-  const bearing = Math.random() * 2 * Math.PI;
-
-  // Convert miles to degrees (roughly)
-  const latOffset = (distanceMiles / 69) * Math.cos(bearing);
-  const lonOffset = (distanceMiles / (69 * Math.cos(toRad(userLat)))) * Math.sin(bearing);
-
-  const mockLat = userLat + latOffset;
-  const mockLon = userLon + lonOffset;
-
-  // Generate a mock address
-  const streetNum = Math.floor(100 + Math.random() * 9900);
-  const streets = ['Main St', 'Oak Ave', 'Park Blvd', 'Commerce Dr', 'Market St'];
-  const street = streets[Math.floor(Math.random() * streets.length)];
-
-  const distance = calculateDistance(userLat, userLon, mockLat, mockLon);
-
-  return {
-    name: restaurantName,
-    latitude: mockLat,
-    longitude: mockLon,
-    address: `${streetNum} ${street}`,
-    distance: distance,
-    withinRadius: distance <= MAX_SEARCH_RADIUS_MILES,
-    placeId: RESTAURANT_CHAINS[restaurantName]?.placeId || 'mock_place',
-    isMock: true,
-  };
-}
 
 /**
  * Search for restaurants near the user using the Google Places API (New).
@@ -235,13 +172,8 @@ export async function searchNearbyRestaurantsLive(userLocation, radiusMetres = F
 
 /**
  * Find up to `maxResults` nearby storefronts for a restaurant chain.
- *
- * When GOOGLE_PLACES_API_KEY is set: uses rankby=distance (no radius) so the
- * API returns every location sorted by true proximity — popular chains like
- * Wingstop will never be filtered out by a radius cap.  Multiple storefronts
- * of the same brand are all returned so users see each unique location on the map.
- *
- * Falls back to a single mock location when no key is configured.
+ * Uses rankby=distance so the API returns every location sorted by true
+ * proximity — popular chains like Wingstop are never filtered by a radius cap.
  *
  * @param {string} restaurantName
  * @param {{latitude: number, longitude: number}} userLocation
@@ -284,12 +216,11 @@ export async function findNearbyRestaurants(restaurantName, userLocation, maxRes
       return [];
     } catch (error) {
       console.error('[ProximityService] Places API error:', error);
-      // Fall through to mock on network failure
+      return [];
     }
   }
 
-  // No API key — single mock location per brand
-  return [generateMockLocation(userLocation.latitude, userLocation.longitude, restaurantName)];
+  return [];
 }
 
 /**
@@ -319,10 +250,10 @@ export async function findAllNearbyRestaurants(userLocation) {
   const nearest = new Map();
   const all = [];
 
-  for (const restaurantName of Object.keys(RESTAURANT_CHAINS)) {
+  for (const restaurantName of SUPPORTED_CHAINS) {
     const locations = await findNearbyRestaurants(restaurantName, userLocation);
     if (locations.length > 0) {
-      nearest.set(restaurantName, locations[0]); // nearest per brand for scoring
+      nearest.set(restaurantName, locations[0]);
       for (const loc of locations) {
         all.push({ name: restaurantName, loc });
       }
@@ -337,30 +268,8 @@ export async function findAllNearbyRestaurants(userLocation) {
  * @param {number} destLat - Destination latitude
  * @param {number} destLon - Destination longitude
  * @param {string} label - Location label/name
- * @param {boolean} isMock - Whether coordinates are mock data
  */
-export function openMapsWithDirections(destLat, destLon, label, isMock = false) {
-  // If mock data, search for the restaurant "near me" instead of
-  // navigating to a random coordinate
-  if (isMock) {
-    const searchQuery = encodeURIComponent(`${label} near me`);
-    const url = Platform.select({
-      ios: `http://maps.apple.com/?q=${searchQuery}`,
-      android: `geo:0,0?q=${searchQuery}`,
-      default: `https://www.google.com/maps/search/?api=1&query=${searchQuery}`,
-    });
-
-    console.log('[MacroDecide] Navigation URL (search):', url);
-
-    Linking.openURL(url).catch((err) => {
-      const fallback = `https://www.google.com/maps/search/?api=1&query=${searchQuery}`;
-      console.log('[MacroDecide] Fallback URL:', fallback);
-      Linking.openURL(fallback);
-    });
-    return;
-  }
-
-  // Real coordinates — navigate directly
+export function openMapsWithDirections(destLat, destLon, label) {
   const encodedLabel = encodeURIComponent(label);
   const url = Platform.select({
     ios: `http://maps.apple.com/?daddr=${destLat},${destLon}&q=${encodedLabel}`,

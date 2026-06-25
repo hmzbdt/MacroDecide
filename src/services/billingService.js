@@ -1,8 +1,11 @@
 import Purchases from 'react-native-purchases';
 
-const RC_API_KEY = 'test_nSFEZdzhaPhqzdQrQztKqhpvCRz';
+const RC_API_KEY = __DEV__
+  ? 'test_nSFEZdzhaPhqzdQrQztKqhpvCRz'
+  : (process.env.EXPO_PUBLIC_RC_API_KEY ?? '');
 
 export function configure() {
+  if (!RC_API_KEY) return;
   Purchases.configure({ apiKey: RC_API_KEY });
 }
 

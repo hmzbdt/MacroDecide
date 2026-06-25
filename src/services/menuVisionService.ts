@@ -1,19 +1,6 @@
 import { GEMINI_API_KEY } from '../config';
 import { RestaurantMenuItem } from '../types/restaurant';
 
-// ── Mock Mode ─────────────────────────────────────────────────────────────────
-// Set to true to bypass the Gemini API entirely and return dummy data.
-const MOCK_SCAN_ENABLED = false;
-
-const MOCK_MENU_ITEMS: RestaurantMenuItem[] = [
-  { id: 'mock_1', name: 'Grilled Chicken Sandwich', category: 'protein', isMandatory: true,  protein: 42, carbs: 38, fat: 12, isAIResult: true, dataSource: 'ocr' },
-  { id: 'mock_2', name: 'Classic Beef Burger',      category: 'protein', isMandatory: true,  protein: 35, carbs: 44, fat: 22, isAIResult: true, dataSource: 'ocr' },
-  { id: 'mock_3', name: 'Caesar Salad',             category: 'base',    isMandatory: false, protein: 12, carbs: 14, fat: 18, isAIResult: true, dataSource: 'ocr' },
-  { id: 'mock_4', name: 'Steamed White Rice',       category: 'base',    isMandatory: false, protein:  4, carbs: 45, fat:  1, isAIResult: true, dataSource: 'ocr' },
-  { id: 'mock_5', name: 'French Fries',             category: 'addon',   isMandatory: false, protein:  4, carbs: 48, fat: 17, isAIResult: true, dataSource: 'ocr' },
-  { id: 'mock_6', name: 'BBQ Sauce',                category: 'addon',   isMandatory: false, protein:  0, carbs: 12, fat:  0, isAIResult: true, dataSource: 'ocr' },
-];
-// ──────────────────────────────────────────────────────────────────────────────
 
 // v1beta is required — v1 returns 404 for these models
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -106,11 +93,6 @@ export async function analyzeMenuImage(
     return [];
   }
 
-  if (MOCK_SCAN_ENABLED) {
-    console.log('[MenuVision] MOCK MODE — returning dummy data, no API call made.');
-    return MOCK_MENU_ITEMS;
-  }
-
   console.log('[MenuVision] Sending image size:', base64Image.length, 'chars');
 
   const prompt   = buildPrompt(restaurantName, existingItemNames);
@@ -140,7 +122,7 @@ export async function analyzeMenuImage(
     } catch (err) {
       console.log('FULL_API_ERROR:', JSON.stringify(err, null, 2));
       console.log('[MenuVision] Network error:', err);
-      return [];
+      throw new Error('Menu text unreadable. Please check lighting and snap a clearer photo.');
     }
 
     if (response.status === 404) {
@@ -155,7 +137,7 @@ export async function analyzeMenuImage(
 
   if (!response) {
     console.log('[MenuVision] All models returned 404. Giving up.');
-    return [];
+    throw new Error('Menu text unreadable. Please check lighting and snap a clearer photo.');
   }
 
   if (!response.ok) {
@@ -167,7 +149,7 @@ export async function analyzeMenuImage(
       console.log('[MenuVision] 429 — quota exhausted. Throwing MenuVisionRateLimitError.');
       throw new MenuVisionRateLimitError();
     }
-    return [];
+    throw new Error('Menu text unreadable. Please check lighting and snap a clearer photo.');
   }
 
   // response.json() awaits the complete body — generateContent is non-streaming,
@@ -178,7 +160,7 @@ export async function analyzeMenuImage(
 
   if (!rawText) {
     console.log('[MenuVision] Empty response from model.');
-    return [];
+    throw new Error('Menu text unreadable. Please check lighting and snap a clearer photo.');
   }
 
   const cleanText = sanitizeJsonText(rawText);
@@ -195,12 +177,12 @@ export async function analyzeMenuImage(
     }
   } catch (e) {
     console.log('[MenuVision] JSON parse failed. Cleaned text:', cleanText.slice(0, 200));
-    return [];
+    throw new Error('Menu text unreadable. Please check lighting and snap a clearer photo.');
   }
 
   if (!parsed) {
     console.log('[MenuVision] Response did not contain a recognisable items array.');
-    return [];
+    throw new Error('Menu text unreadable. Please check lighting and snap a clearer photo.');
   }
 
   console.log(`[MenuVision] Parsed ${parsed.length} items from response.`);
