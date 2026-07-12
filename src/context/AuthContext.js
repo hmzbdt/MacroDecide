@@ -3,10 +3,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../config/firebase';
+import { auth } from '../config/firebase';
+import { subscribeAuthState } from '../services/firebaseService';
 import {
   configure as configurePurchases,
   logIn as rcLogIn,
@@ -29,21 +28,14 @@ export function AuthProvider({ children }) {
   const isAdminRef = useRef(false);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
+    const unsub = subscribeAuthState(async (u, profile) => {
       setUser(u);
       if (u) {
-        try {
-          const snap = await getDoc(doc(db, 'users', u.uid));
-          const data = snap.data() ?? {};
-          const adminFlag = data.isAdmin === true;
-          isAdminRef.current = adminFlag;
-          setIsAdmin(adminFlag);
-          setScanTokens(data.scanTokens ?? 3);
-          if (adminFlag) setIsPremium(true);
-        } catch {
-          isAdminRef.current = false;
-          setIsAdmin(false);
-        }
+        const adminFlag = profile?.isAdmin === true;
+        isAdminRef.current = adminFlag;
+        setIsAdmin(adminFlag);
+        setScanTokens(profile?.scanTokens ?? 3);
+        if (adminFlag) setIsPremium(true);
 
         try {
           await rcLogIn(u.uid);

@@ -1,14 +1,7 @@
-export interface StapleIngredient {
-  id: string;
-  name: string;
-  category: 'Proteins' | 'Carbs' | 'Fats';
-  /** Macros per 100 grams of the ingredient */
-  macrosPer100g: { protein: number; carbs: number; fat: number };
-  /** Optional display subtitle (e.g. 'cooked') */
-  subtitle?: string;
-}
+// Whole-foods baseline ingredients, macros per 100g.
+// Each entry: { id, name, category: 'Proteins'|'Carbs'|'Fats', macrosPer100g: { protein, carbs, fat }, subtitle? }
 
-export const STAPLE_INGREDIENTS: StapleIngredient[] = [
+export const STAPLE_INGREDIENTS = [
   // ── Proteins ──────────────────────────────────────────────────────────────
   { id: 'chicken_breast',   name: 'Chicken Breast',    category: 'Proteins', macrosPer100g: { protein: 31,   carbs: 0,    fat: 3.6  } },
   { id: 'ground_beef',      name: '93/7 Ground Beef',  category: 'Proteins', macrosPer100g: { protein: 26,   carbs: 0,    fat: 7    } },

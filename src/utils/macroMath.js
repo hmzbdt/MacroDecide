@@ -1,4 +1,83 @@
 /**
+ * Calculates the match percentage between target macros and an item's macros
+ * using the Euclidean distance formula in 3D (protein/carbs/fat) space.
+ */
+export function calculateMatchPercentage(target, item) {
+  const deltaP = target.protein - item.protein;
+  const deltaC = target.carbs - item.carbs;
+  const deltaF = target.fat - item.fat;
+
+  const distance = Math.sqrt(deltaP ** 2 + deltaC ** 2 + deltaF ** 2);
+
+  const targetMagnitude = Math.sqrt(
+    target.protein ** 2 + target.carbs ** 2 + target.fat ** 2
+  );
+
+  if (targetMagnitude === 0) {
+    return distance === 0 ? 100 : 0;
+  }
+
+  const normalizedDistance = distance / targetMagnitude;
+  const matchPercentage = Math.max(0, 100 * (1 - normalizedDistance));
+
+  return Math.round(matchPercentage * 10) / 10;
+}
+
+// ─── Meal history grouping (cumulative tracking) ─────────────────────────
+const SESSION_GAP_MS = 45 * 60 * 1000;
+
+export function getDayKey(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+export function getRelativeDayLabel(ts) {
+  const d   = new Date(ts);
+  const now = new Date();
+  const dDay = new Date(d.getFullYear(),   d.getMonth(),   d.getDate());
+  const nDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.round((nDay - dDay) / 86_400_000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return d.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+}
+
+export function formatHistoryDate(ts) {
+  const d = new Date(ts);
+  const mon = d.toLocaleString('default', { month: 'short' });
+  const h = d.getHours(), m = d.getMinutes().toString().padStart(2, '0');
+  return `${mon} ${d.getDate()}, ${h % 12 || 12}:${m} ${h >= 12 ? 'PM' : 'AM'}`;
+}
+
+export function groupByDayAndRestaurant(entries) {
+  if (!entries.length) return [];
+  const sorted = [...entries].sort((a, b) => a.timestamp - b.timestamp);
+  const trips = [];
+  let cur = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const timeDiff = sorted[i].timestamp - sorted[i - 1].timestamp;
+    const sameRest = sorted[i].restaurant === sorted[i - 1].restaurant;
+    if (timeDiff <= SESSION_GAP_MS && sameRest) {
+      cur.push(sorted[i]);
+    } else {
+      trips.push(cur);
+      cur = [sorted[i]];
+    }
+  }
+  trips.push(cur);
+  const dayMap = new Map();
+  for (const trip of trips) {
+    const key = getDayKey(trip[0].timestamp);
+    const label = getRelativeDayLabel(trip[0].timestamp);
+    if (!dayMap.has(key)) dayMap.set(key, { label, trips: [] });
+    dayMap.get(key).trips.push(trip);
+  }
+  return [...dayMap.entries()]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([, v]) => ({ dayLabel: v.label, trips: v.trips.reverse() }));
+}
+
+/**
  * Find the single best protein-category item to recommend for the given targets.
  * Returns { item, sug, density } for the top uncapped item (by density),
  * or the capped item with the highest projected protein if everything is capped.
