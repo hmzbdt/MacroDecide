@@ -1,0 +1,4060 @@
+{
+  "KFC": [
+    {
+      "name": "Apple Pie Poppers",
+      "cal": 80,
+      "fat": 5,
+      "carbs": 9,
+      "prot": 1
+    },
+    {
+      "name": "Fried Pickles",
+      "cal": 35,
+      "fat": 2,
+      "carbs": 4,
+      "prot": 1
+    },
+    {
+      "name": "Honey BBQ Hot & Spicy Wings (1)",
+      "cal": 110,
+      "fat": 6,
+      "carbs": 9,
+      "prot": 5
+    },
+    {
+      "name": "Hot & Spicy Wings (1)",
+      "cal": 90,
+      "fat": 6,
+      "carbs": 3,
+      "prot": 5
+    },
+    {
+      "name": "Mac & Cheese Bowl",
+      "cal": 480,
+      "fat": 22,
+      "carbs": 42,
+      "prot": 30
+    },
+    {
+      "name": "Mashed Potatoes With Gravy (Medium)",
+      "cal": 180,
+      "fat": 6,
+      "carbs": 27,
+      "prot": 4
+    },
+    {
+      "name": "Mike's Hot Honey Hot & Spicy Wings (1)",
+      "cal": 110,
+      "fat": 6,
+      "carbs": 9,
+      "prot": 5
+    },
+    {
+      "name": "Potato Wedges",
+      "cal": 320,
+      "fat": 15,
+      "carbs": 40,
+      "prot": 5
+    },
+    {
+      "name": "Potato Wedges (Large)",
+      "cal": 760,
+      "fat": 36,
+      "carbs": 97,
+      "prot": 11
+    },
+    {
+      "name": "Kentucky Grilled Chicken Thigh",
+      "cal": 150,
+      "fat": 9,
+      "carbs": 0,
+      "prot": 17
+    },
+    {
+      "name": "Kentucky Grilled Chicken Whole Wing",
+      "cal": 70,
+      "fat": 3,
+      "carbs": 0,
+      "prot": 9
+    },
+    {
+      "name": "Spicy Crispy Chicken Breast",
+      "cal": 350,
+      "fat": 20,
+      "carbs": 11,
+      "prot": 30
+    },
+    {
+      "name": "Spicy Crispy Chicken Drumstick",
+      "cal": 130,
+      "fat": 8,
+      "carbs": 5,
+      "prot": 9
+    },
+    {
+      "name": "Spicy Crispy Chicken Thigh",
+      "cal": 270,
+      "fat": 20,
+      "carbs": 10,
+      "prot": 13
+    },
+    {
+      "name": "Spicy Crispy Chicken Whole Wing",
+      "cal": 120,
+      "fat": 8,
+      "carbs": 5,
+      "prot": 7
+    },
+    {
+      "name": "NEW! Original Recipe Tender (each)",
+      "cal": 170,
+      "fat": 6,
+      "carbs": 20,
+      "prot": 11
+    },
+    {
+      "name": "Kentucky Fried Nuggets (1)",
+      "cal": 35,
+      "fat": 2,
+      "carbs": 1,
+      "prot": 3
+    },
+    {
+      "name": "BBQ Baked Beans",
+      "cal": 190,
+      "fat": 1,
+      "carbs": 34,
+      "prot": 11
+    },
+    {
+      "name": "Biscuit",
+      "cal": 180,
+      "fat": 8,
+      "carbs": 22,
+      "prot": 4
+    },
+    {
+      "name": "Coleslaw",
+      "cal": 170,
+      "fat": 12,
+      "carbs": 14,
+      "prot": 1
+    },
+    {
+      "name": "Corn on the Cob",
+      "cal": 70,
+      "fat": 0,
+      "carbs": 17,
+      "prot": 2
+    },
+    {
+      "name": "Green Beans",
+      "cal": 25,
+      "fat": 0,
+      "carbs": 5,
+      "prot": 1
+    },
+    {
+      "name": "KFC Cornbread Muffin",
+      "cal": 210,
+      "fat": 9,
+      "carbs": 28,
+      "prot": 3
+    },
+    {
+      "name": "Macaroni & Cheese",
+      "cal": 140,
+      "fat": 6,
+      "carbs": 17,
+      "prot": 5
+    },
+    {
+      "name": "Mashed Potatoes",
+      "cal": 110,
+      "fat": 4,
+      "carbs": 17,
+      "prot": 2
+    },
+    {
+      "name": "Mashed Potatoes With Gravy",
+      "cal": 130,
+      "fat": 4,
+      "carbs": 20,
+      "prot": 3
+    },
+    {
+      "name": "Secret Recipe Fries",
+      "cal": 320,
+      "fat": 15,
+      "carbs": 41,
+      "prot": 5
+    },
+    {
+      "name": "Sweet Kernel Corn",
+      "cal": 70,
+      "fat": 0,
+      "carbs": 16,
+      "prot": 2
+    },
+    {
+      "name": "BBQ Baked Beans (Family)",
+      "cal": 830,
+      "fat": 5,
+      "carbs": 148,
+      "prot": 47
+    },
+    {
+      "name": "Coleslaw (Family)",
+      "cal": 640,
+      "fat": 46,
+      "carbs": 54,
+      "prot": 4
+    },
+    {
+      "name": "Corn on the Cob (Family)",
+      "cal": 280,
+      "fat": 2,
+      "carbs": 67,
+      "prot": 9
+    },
+    {
+      "name": "Green Beans (Family)",
+      "cal": 80,
+      "fat": 0,
+      "carbs": 15,
+      "prot": 4
+    },
+    {
+      "name": "Macaroni & Cheese (Family)",
+      "cal": 540,
+      "fat": 23,
+      "carbs": 66,
+      "prot": 18
+    },
+    {
+      "name": "Mashed Potatoes (Family)",
+      "cal": 460,
+      "fat": 15,
+      "carbs": 72,
+      "prot": 9
+    },
+    {
+      "name": "Mashed Potatoes With Gravy (Family)",
+      "cal": 590,
+      "fat": 21,
+      "carbs": 88,
+      "prot": 12
+    },
+    {
+      "name": "Secret Recipe Fries (Family)",
+      "cal": 840,
+      "fat": 40,
+      "carbs": 108,
+      "prot": 13
+    },
+    {
+      "name": "Sweet Kernel Corn (Family)",
+      "cal": 280,
+      "fat": 2,
+      "carbs": 67,
+      "prot": 10
+    },
+    {
+      "name": "BBQ - Dipping Sauce Cup",
+      "cal": 45,
+      "fat": 0,
+      "carbs": 11,
+      "prot": 0
+    },
+    {
+      "name": "Buffalo Ranch - Dipping Sauce Cup",
+      "cal": 120,
+      "fat": 13,
+      "carbs": 2,
+      "prot": 1
+    },
+    {
+      "name": "Colonel's Buttery Spread",
+      "cal": 35,
+      "fat": 4,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Comeback Sauce - Dipping Sauce Cup",
+      "cal": 120,
+      "fat": 12,
+      "carbs": 2,
+      "prot": 0
+    },
+    {
+      "name": "Grape Jelly Packet",
+      "cal": 35,
+      "fat": 0,
+      "carbs": 9,
+      "prot": 0
+    },
+    {
+      "name": "Honey Mustard - Dipping Sauce Cup",
+      "cal": 110,
+      "fat": 9,
+      "carbs": 6,
+      "prot": 0
+    },
+    {
+      "name": "Honey Sauce Packet",
+      "cal": 30,
+      "fat": 0,
+      "carbs": 8,
+      "prot": 0
+    },
+    {
+      "name": "Ketchup",
+      "cal": 30,
+      "fat": 0,
+      "carbs": 8,
+      "prot": 0
+    },
+    {
+      "name": "KFC Sauce - Dipping Sauce Cup",
+      "cal": 90,
+      "fat": 8,
+      "carbs": 5,
+      "prot": 0
+    },
+    {
+      "name": "Lemon Juice Packet",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Ranch - Dipping Sauce Cup",
+      "cal": 130,
+      "fat": 14,
+      "carbs": 2,
+      "prot": 0
+    },
+    {
+      "name": "Sticky Chicky Sweet n' Sour Dipping Sauce",
+      "cal": 45,
+      "fat": 0,
+      "carbs": 11,
+      "prot": 0
+    },
+    {
+      "name": "Strawberry Jam Packet",
+      "cal": 35,
+      "fat": 0,
+      "carbs": 9,
+      "prot": 0
+    },
+    {
+      "name": "7UP (12 fl oz)",
+      "cal": 140,
+      "fat": 0,
+      "carbs": 35,
+      "prot": 0
+    },
+    {
+      "name": "7UP (16 fl oz)",
+      "cal": 190,
+      "fat": 0,
+      "carbs": 46,
+      "prot": 0
+    },
+    {
+      "name": "7UP (20 fl oz)",
+      "cal": 240,
+      "fat": 0,
+      "carbs": 58,
+      "prot": 0
+    },
+    {
+      "name": "7UP (30 fl oz)",
+      "cal": 350,
+      "fat": 0,
+      "carbs": 87,
+      "prot": 0
+    },
+    {
+      "name": "Classic Lemonade (1/2 Gallon)",
+      "cal": 880,
+      "fat": 0,
+      "carbs": 234,
+      "prot": 0
+    },
+    {
+      "name": "Classic Lemonade (20 fl oz)",
+      "cal": 140,
+      "fat": 0,
+      "carbs": 39,
+      "prot": 0
+    },
+    {
+      "name": "Code Red Mountain Dew (12 fl oz)",
+      "cal": 170,
+      "fat": 0,
+      "carbs": 46,
+      "prot": 0
+    },
+    {
+      "name": "Code Red Mountain Dew (16 fl oz)",
+      "cal": 230,
+      "fat": 0,
+      "carbs": 62,
+      "prot": 0
+    },
+    {
+      "name": "Code Red Mountain Dew (20 fl oz)",
+      "cal": 290,
+      "fat": 0,
+      "carbs": 77,
+      "prot": 0
+    },
+    {
+      "name": "Code Red Mountain Dew (30 fl oz)",
+      "cal": 430,
+      "fat": 0,
+      "carbs": 116,
+      "prot": 0
+    },
+    {
+      "name": "Diet Mountain Dew (16 fl oz)",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Diet Mountain Dew (20 fl oz)",
+      "cal": 10,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Diet Mountain Dew (30 fl oz)",
+      "cal": 10,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Dr Pepper (12 fl oz)",
+      "cal": 140,
+      "fat": 0,
+      "carbs": 39,
+      "prot": 0
+    },
+    {
+      "name": "Dr Pepper (16 fl oz)",
+      "cal": 190,
+      "fat": 0,
+      "carbs": 52,
+      "prot": 0
+    },
+    {
+      "name": "Dr Pepper (20 fl oz)",
+      "cal": 240,
+      "fat": 0,
+      "carbs": 65,
+      "prot": 0
+    },
+    {
+      "name": "Dr Pepper (30 fl oz)",
+      "cal": 360,
+      "fat": 0,
+      "carbs": 98,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Lemon Tea (12 fl oz)",
+      "cal": 80,
+      "fat": 0,
+      "carbs": 22,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Lemon Tea (16 fl oz)",
+      "cal": 110,
+      "fat": 0,
+      "carbs": 29,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Lemon Tea (20 fl oz)",
+      "cal": 140,
+      "fat": 0,
+      "carbs": 36,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Lemon Tea (30 fl oz)",
+      "cal": 210,
+      "fat": 0,
+      "carbs": 55,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk No Calorie Peach Iced Green",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Raspberry Tea (12 fl oz)",
+      "cal": 80,
+      "fat": 0,
+      "carbs": 20,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Raspberry Tea (16 fl oz)",
+      "cal": 100,
+      "fat": 0,
+      "carbs": 26,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Raspberry Tea (20 fl oz)",
+      "cal": 130,
+      "fat": 0,
+      "carbs": 33,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Raspberry Tea (30 fl oz)",
+      "cal": 190,
+      "fat": 0,
+      "carbs": 49,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Sweet Iced Tea (12 fl oz)",
+      "cal": 80,
+      "fat": 0,
+      "carbs": 22,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Sweet Iced Tea (16 fl oz)",
+      "cal": 110,
+      "fat": 0,
+      "carbs": 29,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Sweet Iced Tea (20 fl oz)",
+      "cal": 130,
+      "fat": 0,
+      "carbs": 36,
+      "prot": 0
+    },
+    {
+      "name": "Lipton Brisk Sweet Iced Tea (30 fl oz)",
+      "cal": 200,
+      "fat": 0,
+      "carbs": 54,
+      "prot": 0
+    },
+    {
+      "name": "Manzanita Sol (12 fl oz)",
+      "cal": 160,
+      "fat": 0,
+      "carbs": 42,
+      "prot": 0
+    },
+    {
+      "name": "Manzanita Sol (16 fl oz)",
+      "cal": 210,
+      "fat": 0,
+      "carbs": 57,
+      "prot": 0
+    },
+    {
+      "name": "Manzanita Sol (20 fl oz)",
+      "cal": 260,
+      "fat": 0,
+      "carbs": 71,
+      "prot": 0
+    },
+    {
+      "name": "Manzanita Sol (30 fl oz)",
+      "cal": 400,
+      "fat": 0,
+      "carbs": 106,
+      "prot": 0
+    },
+    {
+      "name": "Miranda Strawberry (12 fl oz)",
+      "cal": 160,
+      "fat": 0,
+      "carbs": 44,
+      "prot": 0
+    },
+    {
+      "name": "Miranda Strawberry (16 fl oz)",
+      "cal": 220,
+      "fat": 0,
+      "carbs": 58,
+      "prot": 0
+    },
+    {
+      "name": "Miranda Strawberry (20 fl oz)",
+      "cal": 270,
+      "fat": 0,
+      "carbs": 73,
+      "prot": 0
+    },
+    {
+      "name": "Miranda Strawberry (30 fl oz)",
+      "cal": 410,
+      "fat": 0,
+      "carbs": 109,
+      "prot": 0
+    },
+    {
+      "name": "MNT DEW Sweet Lightning (20 fl oz)",
+      "cal": 120,
+      "fat": 0,
+      "carbs": 32,
+      "prot": 0
+    },
+    {
+      "name": "Mountain Dew (12 fl oz)",
+      "cal": 160,
+      "fat": 0,
+      "carbs": 44,
+      "prot": 0
+    },
+    {
+      "name": "Mountain Dew (16 fl oz)",
+      "cal": 220,
+      "fat": 0,
+      "carbs": 59,
+      "prot": 0
+    },
+    {
+      "name": "Mountain Dew (20 fl oz)",
+      "cal": 270,
+      "fat": 0,
+      "carbs": 73,
+      "prot": 0
+    },
+    {
+      "name": "Mountain Dew (30 fl oz)",
+      "cal": 410,
+      "fat": 0,
+      "carbs": 110,
+      "prot": 0
+    },
+    {
+      "name": "Mug Root Beer (12 fl oz)",
+      "cal": 140,
+      "fat": 0,
+      "carbs": 39,
+      "prot": 0
+    },
+    {
+      "name": "Mug Root Beer (16 fl oz)",
+      "cal": 190,
+      "fat": 0,
+      "carbs": 52,
+      "prot": 0
+    },
+    {
+      "name": "Mug Root Beer (20 fl oz)",
+      "cal": 240,
+      "fat": 0,
+      "carbs": 65,
+      "prot": 0
+    },
+    {
+      "name": "Mug Root Beer (30 fl oz)",
+      "cal": 360,
+      "fat": 0,
+      "carbs": 98,
+      "prot": 0
+    },
+    {
+      "name": "Pepsi (12 fl oz)",
+      "cal": 150,
+      "fat": 0,
+      "carbs": 41,
+      "prot": 0
+    },
+    {
+      "name": "Pepsi (16 fl oz)",
+      "cal": 200,
+      "fat": 0,
+      "carbs": 55,
+      "prot": 0
+    },
+    {
+      "name": "Pepsi (20 fl oz)",
+      "cal": 250,
+      "fat": 0,
+      "carbs": 69,
+      "prot": 0
+    },
+    {
+      "name": "Pepsi (30 fl oz)",
+      "cal": 380,
+      "fat": 0,
+      "carbs": 104,
+      "prot": 0
+    },
+    {
+      "name": "Sobe Lifewater Yumberry Pomegranate (30 fl",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Starry (12 fl oz)",
+      "cal": 150,
+      "fat": 0,
+      "carbs": 39,
+      "prot": 0
+    },
+    {
+      "name": "Starry (16 fl oz)",
+      "cal": 200,
+      "fat": 0,
+      "carbs": 52,
+      "prot": 0
+    },
+    {
+      "name": "Starry (20 fl oz)",
+      "cal": 240,
+      "fat": 0,
+      "carbs": 65,
+      "prot": 0
+    },
+    {
+      "name": "Starry (30 fl oz)",
+      "cal": 370,
+      "fat": 0,
+      "carbs": 97,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Fruit Punch (12 fl oz)",
+      "cal": 170,
+      "fat": 0,
+      "carbs": 45,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Fruit Punch (16 fl oz)",
+      "cal": 230,
+      "fat": 0,
+      "carbs": 60,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Fruit Punch (20 fl oz)",
+      "cal": 280,
+      "fat": 0,
+      "carbs": 75,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Fruit Punch (30 fl oz)",
+      "cal": 420,
+      "fat": 0,
+      "carbs": 113,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Light Lemonade (12 fl oz)",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Light Lemonade (16 fl oz)",
+      "cal": 10,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Light Lemonade (20 fl oz)",
+      "cal": 10,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Light Lemonade (30 fl oz)",
+      "cal": 15,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Pink Lemonade (12 fl oz)",
+      "cal": 150,
+      "fat": 0,
+      "carbs": 40,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Pink Lemonade (16 fl oz)",
+      "cal": 210,
+      "fat": 0,
+      "carbs": 53,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Pink Lemonade (20 fl oz)",
+      "cal": 260,
+      "fat": 0,
+      "carbs": 67,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Pink Lemonade (30 fl oz)",
+      "cal": 390,
+      "fat": 0,
+      "carbs": 100,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Twister Orange (12 fl oz)",
+      "cal": 170,
+      "fat": 0,
+      "carbs": 46,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Twister Orange (16 fl oz)",
+      "cal": 230,
+      "fat": 0,
+      "carbs": 61,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Twister Orange (20 fl oz)",
+      "cal": 290,
+      "fat": 0,
+      "carbs": 76,
+      "prot": 0
+    },
+    {
+      "name": "Tropicana Twister Orange (30 fl oz)",
+      "cal": 430,
+      "fat": 0,
+      "carbs": 115,
+      "prot": 0
+    },
+    {
+      "name": "Wild Cherry Pepsi (12 fl oz)",
+      "cal": 160,
+      "fat": 0,
+      "carbs": 42,
+      "prot": 0
+    },
+    {
+      "name": "Wild Cherry Pepsi (16 fl oz)",
+      "cal": 210,
+      "fat": 0,
+      "carbs": 56,
+      "prot": 0
+    },
+    {
+      "name": "Wild Cherry Pepsi (20 fl oz)",
+      "cal": 260,
+      "fat": 0,
+      "carbs": 70,
+      "prot": 0
+    },
+    {
+      "name": "Wild Cherry Pepsi (30 fl oz)",
+      "cal": 390,
+      "fat": 0,
+      "carbs": 105,
+      "prot": 0
+    },
+    {
+      "name": "Country Fried Steak without Peppered White",
+      "cal": 360,
+      "fat": 24,
+      "carbs": 22,
+      "prot": 13
+    },
+    {
+      "name": "Country Fried Steak with Peppered White",
+      "cal": 390,
+      "fat": 26,
+      "carbs": 26,
+      "prot": 13
+    },
+    {
+      "name": "KFC Gizzards",
+      "cal": 300,
+      "fat": 16,
+      "carbs": 18,
+      "prot": 20
+    },
+    {
+      "name": "KFC Livers",
+      "cal": 230,
+      "fat": 13,
+      "carbs": 12,
+      "prot": 17
+    }
+  ],
+  "Taco Bell": [
+    {
+      "name": "Soft Taco Supreme - Seasoned Beef",
+      "cal": 260,
+      "fat": 16,
+      "carbs": 18,
+      "prot": 13
+    },
+    {
+      "name": "Soft Taco Supreme - Grilled Chicken",
+      "cal": 234,
+      "fat": 12,
+      "carbs": 17,
+      "prot": 15
+    },
+    {
+      "name": "Soft Taco Supreme - Crispy Chicken",
+      "cal": 363,
+      "fat": 18,
+      "carbs": 46,
+      "prot": 8
+    },
+    {
+      "name": "Soft Taco Supreme - Pulled Oats",
+      "cal": 268,
+      "fat": 13,
+      "carbs": 20,
+      "prot": 18
+    },
+    {
+      "name": "Quesadilla - Seasoned Beef",
+      "cal": 566,
+      "fat": 32,
+      "carbs": 40,
+      "prot": 28
+    },
+    {
+      "name": "Quesadilla - Grilled Chicken",
+      "cal": 541,
+      "fat": 29,
+      "carbs": 38,
+      "prot": 31
+    },
+    {
+      "name": "Quesadilla - Crispy Chicken",
+      "cal": 850,
+      "fat": 41,
+      "carbs": 96,
+      "prot": 26
+    },
+    {
+      "name": "Quesadilla - Pulled Oats",
+      "cal": 575,
+      "fat": 30,
+      "carbs": 42,
+      "prot": 33
+    },
+    {
+      "name": "Crunchwrap Supreme - Seasoned Beef",
+      "cal": 570,
+      "fat": 30,
+      "carbs": 57,
+      "prot": 21
+    },
+    {
+      "name": "Crunchwrap Supreme - Grilled Chicken",
+      "cal": 544,
+      "fat": 26,
+      "carbs": 56,
+      "prot": 23
+    },
+    {
+      "name": "Crunchwrap Supreme - Crispy Chicken",
+      "cal": 853,
+      "fat": 38,
+      "carbs": 114,
+      "prot": 19
+    },
+    {
+      "name": "Crunchwrap Supreme - Pulled Oats",
+      "cal": 578,
+      "fat": 27,
+      "carbs": 60,
+      "prot": 26
+    },
+    {
+      "name": "Naked Burrito Bowl - Seasoned Beef",
+      "cal": 476,
+      "fat": 24,
+      "carbs": 51,
+      "prot": 22
+    },
+    {
+      "name": "Naked Burrito Bowl - Grilled Chicken",
+      "cal": 425,
+      "fat": 17,
+      "carbs": 48,
+      "prot": 27
+    },
+    {
+      "name": "Naked Burrito Bowl - Crispy Chicken",
+      "cal": 503,
+      "fat": 22,
+      "carbs": 78,
+      "prot": 10
+    },
+    {
+      "name": "Naked Burrito Bowl - Pulled Oats",
+      "cal": 493,
+      "fat": 19,
+      "carbs": 55,
+      "prot": 32
+    },
+    {
+      "name": "Vegan Burrito - Pulled Oats",
+      "cal": 443,
+      "fat": 14,
+      "carbs": 59,
+      "prot": 22
+    },
+    {
+      "name": "Grilled Stuft Burrito - Seasoned Beef",
+      "cal": 654,
+      "fat": 31,
+      "carbs": 66,
+      "prot": 29
+    },
+    {
+      "name": "Grilled Stuft Burrito - Grilled Chicken",
+      "cal": 602,
+      "fat": 24,
+      "carbs": 63,
+      "prot": 34
+    },
+    {
+      "name": "Grilled Stuft Burrito - Crispy Chicken",
+      "cal": 861,
+      "fat": 35,
+      "carbs": 121,
+      "prot": 20
+    },
+    {
+      "name": "Grilled Stuft Burrito - Pulled Oats",
+      "cal": 671,
+      "fat": 26,
+      "carbs": 70,
+      "prot": 40
+    },
+    {
+      "name": "Chalupa Supreme - Seasoned Beef",
+      "cal": 392,
+      "fat": 23,
+      "carbs": 33,
+      "prot": 15
+    },
+    {
+      "name": "Chalupa Supreme - Grilled Chicken",
+      "cal": 377,
+      "fat": 20,
+      "carbs": 33,
+      "prot": 17
+    },
+    {
+      "name": "Chalupa Supreme - Crispy Chicken",
+      "cal": 425,
+      "fat": 25,
+      "carbs": 36,
+      "prot": 16
+    },
+    {
+      "name": "Chalupa Supreme - Pulled Oats",
+      "cal": 432,
+      "fat": 26,
+      "carbs": 35,
+      "prot": 16
+    },
+    {
+      "name": "Cheesy Gordita Crunch - Seasoned Beef",
+      "cal": 519,
+      "fat": 31,
+      "carbs": 40,
+      "prot": 22
+    },
+    {
+      "name": "Cheesy Gordita Crunch - Grilled Chicken",
+      "cal": 494,
+      "fat": 27,
+      "carbs": 38,
+      "prot": 25
+    },
+    {
+      "name": "Cheesy Gordita Crunch - Crispy Chicken",
+      "cal": 623,
+      "fat": 32,
+      "carbs": 68,
+      "prot": 18
+    },
+    {
+      "name": "Cheesy Gordita Crunch - Pulled Oats",
+      "cal": 528,
+      "fat": 28,
+      "carbs": 42,
+      "prot": 27
+    },
+    {
+      "name": "Fully Loaded Fries - Seasoned Beef",
+      "cal": 871,
+      "fat": 52,
+      "carbs": 75,
+      "prot": 28
+    },
+    {
+      "name": "Fully Loaded Fries - Grilled Chicken",
+      "cal": 820,
+      "fat": 44,
+      "carbs": 72,
+      "prot": 32
+    },
+    {
+      "name": "Fully loaded Fries - Crispy Chicken",
+      "cal": 1078,
+      "fat": 56,
+      "carbs": 130,
+      "prot": 18
+    },
+    {
+      "name": "Fully loaded Fries - Pulled Oats",
+      "cal": 888,
+      "fat": 46,
+      "carbs": 79,
+      "prot": 38
+    },
+    {
+      "name": "Churro with chocolate sauce",
+      "cal": 108,
+      "fat": 2,
+      "carbs": 22,
+      "prot": 3
+    },
+    {
+      "name": "Churro",
+      "cal": 67,
+      "fat": 2,
+      "carbs": 14,
+      "prot": 2
+    },
+    {
+      "name": "Cinnamon Twist",
+      "cal": 161,
+      "fat": 6,
+      "carbs": 27,
+      "prot": 1
+    },
+    {
+      "name": "Cheesy Roll Up",
+      "cal": 202,
+      "fat": 11,
+      "carbs": 16,
+      "prot": 10
+    },
+    {
+      "name": "Spicy Chicken Griller",
+      "cal": 329,
+      "fat": 12,
+      "carbs": 36,
+      "prot": 17
+    },
+    {
+      "name": "Beefy Nacho Griller",
+      "cal": 384,
+      "fat": 17,
+      "carbs": 41,
+      "prot": 16
+    },
+    {
+      "name": "Vegan Griller",
+      "cal": 317,
+      "fat": 8,
+      "carbs": 39,
+      "prot": 19
+    },
+    {
+      "name": "Mexi Melt",
+      "cal": 178,
+      "fat": 15,
+      "carbs": 17,
+      "prot": 17
+    },
+    {
+      "name": "Cheese Quesadilla",
+      "cal": 492,
+      "fat": 28,
+      "carbs": 39,
+      "prot": 21
+    },
+    {
+      "name": "Cheesy Topped Fries",
+      "cal": 394,
+      "fat": 25,
+      "carbs": 36,
+      "prot": 8
+    },
+    {
+      "name": "Crispy Chicken 1 pc + CaliRanch sauce",
+      "cal": 349,
+      "fat": 24,
+      "carbs": 32,
+      "prot": 4
+    },
+    {
+      "name": "Crispy Chicken 1 pc",
+      "cal": 180,
+      "fat": 6,
+      "carbs": 29,
+      "prot": 3
+    },
+    {
+      "name": "Crispy Chicken 3 pcs + CaliRanch sauce",
+      "cal": 708,
+      "fat": 37,
+      "carbs": 90,
+      "prot": 9
+    },
+    {
+      "name": "Crunchy Taco - Seasoned Beef",
+      "cal": 173,
+      "fat": 11,
+      "carbs": 10,
+      "prot": 10
+    },
+    {
+      "name": "Crunchy Taco - Grilled Chicken",
+      "cal": 148,
+      "fat": 7,
+      "carbs": 9,
+      "prot": 13
+    },
+    {
+      "name": "Crunchy Taco - Pulled Oats",
+      "cal": 182,
+      "fat": 8,
+      "carbs": 12,
+      "prot": 16
+    },
+    {
+      "name": "Soft Taco - Seasoned Beef",
+      "cal": 211,
+      "fat": 11,
+      "carbs": 17,
+      "prot": 12
+    },
+    {
+      "name": "Soft Taco - Grilled Chicken",
+      "cal": 186,
+      "fat": 7,
+      "carbs": 16,
+      "prot": 15
+    },
+    {
+      "name": "Soft Taco - Crispy Chicken",
+      "cal": 315,
+      "fat": 13,
+      "carbs": 45,
+      "prot": 8
+    },
+    {
+      "name": "Soft Taco - Pulled Oats",
+      "cal": 220,
+      "fat": 8,
+      "carbs": 19,
+      "prot": 18
+    },
+    {
+      "name": "Seasoned fries",
+      "cal": 259,
+      "fat": 12,
+      "carbs": 33,
+      "prot": 4
+    },
+    {
+      "name": "Salad",
+      "cal": 7,
+      "fat": 4,
+      "carbs": 1,
+      "prot": 1
+    },
+    {
+      "name": "Sauce sachet (mild/fire)",
+      "cal": 1,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Sour cream",
+      "cal": 94,
+      "fat": 10,
+      "carbs": 1,
+      "prot": 1
+    },
+    {
+      "name": "Guacamole",
+      "cal": 59,
+      "fat": 5,
+      "carbs": 4,
+      "prot": 1
+    },
+    {
+      "name": "Pico de gallo",
+      "cal": 15,
+      "fat": 0,
+      "carbs": 3,
+      "prot": 0
+    },
+    {
+      "name": "Nacho cheese sauce",
+      "cal": 88,
+      "fat": 8,
+      "carbs": 2,
+      "prot": 3
+    },
+    {
+      "name": "Creamy Jalapeno sauce",
+      "cal": 59,
+      "fat": 5,
+      "carbs": 3,
+      "prot": 0
+    },
+    {
+      "name": "Ketchup",
+      "cal": 12,
+      "fat": 0,
+      "carbs": 3,
+      "prot": 0
+    },
+    {
+      "name": "Mexican rice",
+      "cal": 49,
+      "fat": 2,
+      "carbs": 8,
+      "prot": 1
+    },
+    {
+      "name": "Jalapeos",
+      "cal": 2,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Black beans",
+      "cal": 92,
+      "fat": 0,
+      "carbs": 16,
+      "prot": 6
+    },
+    {
+      "name": "Seasoned Beef",
+      "cal": 76,
+      "fat": 4,
+      "carbs": 1,
+      "prot": 7
+    },
+    {
+      "name": "Grilled Chicken",
+      "cal": 51,
+      "fat": 1,
+      "carbs": 2,
+      "prot": 10
+    },
+    {
+      "name": "Crispy Chicken",
+      "cal": 180,
+      "fat": 6,
+      "carbs": 29,
+      "prot": 3
+    },
+    {
+      "name": "Pulled Oats",
+      "cal": 85,
+      "fat": 2,
+      "carbs": 3,
+      "prot": 13
+    },
+    {
+      "name": "Soft drink - Coca Cola",
+      "cal": 42,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Soft drink - Coca Cola Zero Lemon",
+      "cal": 1,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Soft drink - Fanta Zero",
+      "cal": 3,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Soft drink - Sprite Zero",
+      "cal": 1,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Soft drink - Bonaqua Explore Strawberry-kiwi",
+      "cal": 13,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Freeze (all flavours)",
+      "cal": 19,
+      "fat": 0,
+      "carbs": 4,
+      "prot": 0
+    },
+    {
+      "name": "Corona",
+      "cal": 126,
+      "fat": 0,
+      "carbs": 12,
+      "prot": 0
+    },
+    {
+      "name": "Crowmoor",
+      "cal": 135,
+      "fat": 0,
+      "carbs": 14,
+      "prot": 0
+    },
+    {
+      "name": "Apple juice",
+      "cal": 43,
+      "fat": 0,
+      "carbs": 10,
+      "prot": 0
+    },
+    {
+      "name": "Orange juice",
+      "cal": 43,
+      "fat": 0,
+      "carbs": 9,
+      "prot": 0
+    },
+    {
+      "name": "Milk",
+      "cal": 47,
+      "fat": 2,
+      "carbs": 5,
+      "prot": 4
+    },
+    {
+      "name": "Coffee",
+      "cal": 2,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Tea",
+      "cal": 2,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Ben & Jerrys Cookie Dough",
+      "cal": 270,
+      "fat": 15,
+      "carbs": 30,
+      "prot": 4
+    },
+    {
+      "name": "Ben & Jerrys Half Baked",
+      "cal": 230,
+      "fat": 12,
+      "carbs": 28,
+      "prot": 4
+    },
+    {
+      "name": "Ben & Jerrys Chocolate brownie fudge",
+      "cal": 249,
+      "fat": 13,
+      "carbs": 29,
+      "prot": 4
+    }
+  ],
+  "Starbucks": [
+    {
+      "name": "Butter Croissant",
+      "cal": 250,
+      "fat": 13,
+      "carbs": 28,
+      "prot": 5
+    },
+    {
+      "name": "Cinnamon Swirl",
+      "cal": 387,
+      "fat": 8,
+      "carbs": 67,
+      "prot": 11
+    },
+    {
+      "name": "Luxury Fruit Bread",
+      "cal": 491,
+      "fat": 11,
+      "carbs": 84,
+      "prot": 12
+    },
+    {
+      "name": "Fruit Scone",
+      "cal": 289,
+      "fat": 9,
+      "carbs": 44,
+      "prot": 7
+    },
+    {
+      "name": "Chocolate & Hazelnut Croissant",
+      "cal": 358,
+      "fat": 19,
+      "carbs": 40,
+      "prot": 5
+    },
+    {
+      "name": "Pistachio Croissant",
+      "cal": 281,
+      "fat": 14,
+      "carbs": 32,
+      "prot": 6
+    },
+    {
+      "name": "Pain au Chocolat",
+      "cal": 275,
+      "fat": 14,
+      "carbs": 30,
+      "prot": 2
+    },
+    {
+      "name": "Chocolate Chunk Cookie",
+      "cal": 338,
+      "fat": 15,
+      "carbs": 45,
+      "prot": 4
+    },
+    {
+      "name": "Carrot Cake Loaf",
+      "cal": 390,
+      "fat": 18,
+      "carbs": 51,
+      "prot": 4
+    },
+    {
+      "name": "Vanilla Blueberry Loaf",
+      "cal": 436,
+      "fat": 27,
+      "carbs": 44,
+      "prot": 5
+    },
+    {
+      "name": "Red Velvet Loaf",
+      "cal": 419,
+      "fat": 23,
+      "carbs": 45,
+      "prot": 7
+    },
+    {
+      "name": "Black Forest Yule Log",
+      "cal": 314,
+      "fat": 16,
+      "carbs": 41,
+      "prot": 2
+    },
+    {
+      "name": "Raspberry & White Chocolate Swiss Roll",
+      "cal": 313,
+      "fat": 16,
+      "carbs": 40,
+      "prot": 2
+    },
+    {
+      "name": "Pistachio Latte Loaf",
+      "cal": 415,
+      "fat": 27,
+      "carbs": 35,
+      "prot": 7
+    },
+    {
+      "name": "Fifteens",
+      "cal": 300,
+      "fat": 13,
+      "carbs": 47,
+      "prot": 3
+    },
+    {
+      "name": "White Twizzle Stick",
+      "cal": 153,
+      "fat": 2,
+      "carbs": 33,
+      "prot": 1
+    },
+    {
+      "name": "Milk Twizzle Stick",
+      "cal": 153,
+      "fat": 5,
+      "carbs": 27,
+      "prot": 1
+    },
+    {
+      "name": "Teaser Slice",
+      "cal": 502,
+      "fat": 27,
+      "carbs": 59,
+      "prot": 5
+    },
+    {
+      "name": "Pink Pop",
+      "cal": 172,
+      "fat": 10,
+      "carbs": 19,
+      "prot": 2
+    },
+    {
+      "name": "Cookies & Cream Pop",
+      "cal": 168,
+      "fat": 10,
+      "carbs": 19,
+      "prot": 2
+    },
+    {
+      "name": "Millionaire Shortbread",
+      "cal": 535,
+      "fat": 28,
+      "carbs": 64,
+      "prot": 5
+    },
+    {
+      "name": "Ultimate Chocolate Brownie",
+      "cal": 494,
+      "fat": 28,
+      "carbs": 51,
+      "prot": 6
+    },
+    {
+      "name": "Bakewell Tartlet",
+      "cal": 308,
+      "fat": 12,
+      "carbs": 45,
+      "prot": 3
+    },
+    {
+      "name": "Cookies & Cream Brookie",
+      "cal": 470,
+      "fat": 23,
+      "carbs": 62,
+      "prot": 4
+    },
+    {
+      "name": "Mince Pie",
+      "cal": 490,
+      "fat": 17,
+      "carbs": 79,
+      "prot": 4
+    },
+    {
+      "name": "Chocolate Orange Biscuit Cake",
+      "cal": 517,
+      "fat": 27,
+      "carbs": 62,
+      "prot": 4
+    },
+    {
+      "name": "Speculoos & Caramel Crispie",
+      "cal": 401,
+      "fat": 18,
+      "carbs": 56,
+      "prot": 3
+    },
+    {
+      "name": "Salted Caramel Brownie",
+      "cal": 408,
+      "fat": 22,
+      "carbs": 49,
+      "prot": 4
+    },
+    {
+      "name": "Pistachio Pop",
+      "cal": 168,
+      "fat": 10,
+      "carbs": 17,
+      "prot": 2
+    },
+    {
+      "name": "Chocolate & Hazelnut Brookie",
+      "cal": 431,
+      "fat": 24,
+      "carbs": 49,
+      "prot": 5
+    },
+    {
+      "name": "Snickerdoodle Crispie",
+      "cal": 283,
+      "fat": 14,
+      "carbs": 35,
+      "prot": 5
+    },
+    {
+      "name": "Caramel & Chocolate Brownie",
+      "cal": 351,
+      "fat": 19,
+      "carbs": 41,
+      "prot": 4
+    },
+    {
+      "name": "Valentines Bear",
+      "cal": 175,
+      "fat": 10,
+      "carbs": 19,
+      "prot": 2
+    },
+    {
+      "name": "Porridge Made With Water",
+      "cal": 130,
+      "fat": 2,
+      "carbs": 23,
+      "prot": 4
+    },
+    {
+      "name": "Porridge Made With Semi-Skimmed Milk",
+      "cal": 217,
+      "fat": 5,
+      "carbs": 32,
+      "prot": 10
+    },
+    {
+      "name": "Ham And Cheese Croissant",
+      "cal": 307,
+      "fat": 16,
+      "carbs": 25,
+      "prot": 14
+    },
+    {
+      "name": "Cheese & Mushroom Croissant",
+      "cal": 324,
+      "fat": 19,
+      "carbs": 26,
+      "prot": 13
+    },
+    {
+      "name": "All Day Breakfast Ciabatta",
+      "cal": 508,
+      "fat": 21,
+      "carbs": 57,
+      "prot": 22
+    },
+    {
+      "name": "Ham & Cheese Croque",
+      "cal": 442,
+      "fat": 14,
+      "carbs": 57,
+      "prot": 22
+    },
+    {
+      "name": "Breakfast Toastie",
+      "cal": 484,
+      "fat": 22,
+      "carbs": 52,
+      "prot": 20
+    },
+    {
+      "name": "Chicken Pesto Croque",
+      "cal": 522,
+      "fat": 22,
+      "carbs": 54,
+      "prot": 25
+    },
+    {
+      "name": "Holiday Ham & Cheese Croque",
+      "cal": 473,
+      "fat": 16,
+      "carbs": 56,
+      "prot": 25
+    },
+    {
+      "name": "Bacon, Brie & Cranberry Croque",
+      "cal": 543,
+      "fat": 20,
+      "carbs": 62,
+      "prot": 24
+    },
+    {
+      "name": "Turkey, Stuffing & Cranberry Croque",
+      "cal": 546,
+      "fat": 16,
+      "carbs": 73,
+      "prot": 27
+    },
+    {
+      "name": "Feta, Roasted Red Pepper & Balsamic Croque",
+      "cal": 547,
+      "fat": 25,
+      "carbs": 60,
+      "prot": 18
+    },
+    {
+      "name": "Ham & Cheese Ciabatta",
+      "cal": 469,
+      "fat": 15,
+      "carbs": 55,
+      "prot": 27
+    },
+    {
+      "name": "Beetroot, Roasted Veg and Hummus Ciabatta",
+      "cal": 538,
+      "fat": 16,
+      "carbs": 79,
+      "prot": 16
+    },
+    {
+      "name": "Chicken & Hot Honey Ciabatta",
+      "cal": 550,
+      "fat": 19,
+      "carbs": 69,
+      "prot": 28
+    },
+    {
+      "name": "Sausage Bap",
+      "cal": 453,
+      "fat": 23,
+      "carbs": 45,
+      "prot": 17
+    },
+    {
+      "name": "Mediterranean Focaccia",
+      "cal": 411,
+      "fat": 21,
+      "carbs": 46,
+      "prot": 13
+    },
+    {
+      "name": "Chorizo, Mozzarella & Red Pepper Romana",
+      "cal": 417,
+      "fat": 14,
+      "carbs": 51,
+      "prot": 21
+    },
+    {
+      "name": "Chicken & Bacon Caesar Wrap",
+      "cal": 540,
+      "fat": 27,
+      "carbs": 46,
+      "prot": 29
+    },
+    {
+      "name": "Korean Style Hot Honey Chicken Wrap",
+      "cal": 422,
+      "fat": 11,
+      "carbs": 57,
+      "prot": 21
+    },
+    {
+      "name": "Popchips",
+      "cal": 99,
+      "fat": 3,
+      "carbs": 16,
+      "prot": 2
+    },
+    {
+      "name": "O'Donnell's Crisps - Cheese & Onion",
+      "cal": 244,
+      "fat": 14,
+      "carbs": 26,
+      "prot": 3
+    },
+    {
+      "name": "O'Donnell's Crisps - Salt & Vinegar",
+      "cal": 240,
+      "fat": 14,
+      "carbs": 26,
+      "prot": 2
+    },
+    {
+      "name": "Iced Gingerbread Biscuit",
+      "cal": 187,
+      "fat": 4,
+      "carbs": 35,
+      "prot": 2
+    },
+    {
+      "name": "Cookie Straw",
+      "cal": 90,
+      "fat": 3,
+      "carbs": 15,
+      "prot": 1
+    },
+    {
+      "name": "Swiss Chocolate Dark",
+      "cal": 219,
+      "fat": 15,
+      "carbs": 16,
+      "prot": 3
+    },
+    {
+      "name": "Swiss Chocolate Milk",
+      "cal": 225,
+      "fat": 14,
+      "carbs": 21,
+      "prot": 3
+    },
+    {
+      "name": "Roasted & Salted Nuts",
+      "cal": 225,
+      "fat": 18,
+      "carbs": 8,
+      "prot": 7
+    },
+    {
+      "name": "Chocolate Gold Coin",
+      "cal": 120,
+      "fat": 6,
+      "carbs": 14,
+      "prot": 1
+    },
+    {
+      "name": "Shortbread Biscuits",
+      "cal": 135,
+      "fat": 8,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Caramel Waffles",
+      "cal": 176,
+      "fat": 8,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Gluten Free Chocolate Brownie",
+      "cal": 263,
+      "fat": 14,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Gluten Free Fruit & Nut Bar",
+      "cal": 310,
+      "fat": 16,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "VITHIT Sparkling Pink Grapefruit",
+      "cal": 11,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "VITHIT Sparkling Raspberry & Grapefruit",
+      "cal": 11,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "VITHIT Sparkling Mango & Pineapple",
+      "cal": 11,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Innocent Berry Energise Smoothie",
+      "cal": 156,
+      "fat": 2,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Innocent Invigorate Super Smoothie",
+      "cal": 102,
+      "fat": 1,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Innocent Strawberry And Raspberry Kids",
+      "cal": 75,
+      "fat": 1,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Innocent orange juice 330ml",
+      "cal": 119,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    }
+  ],
+  "Domino's": [
+    {
+      "name": "Garlic Oil Blend (Hand Tossed Only)",
+      "cal": 35,
+      "fat": 4,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Honey BBQ",
+      "cal": 25,
+      "fat": 0,
+      "carbs": 7,
+      "prot": 0
+    },
+    {
+      "name": "Ranch",
+      "cal": 70,
+      "fat": 7,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Bacon",
+      "cal": 70,
+      "fat": 6,
+      "carbs": 0,
+      "prot": 4
+    },
+    {
+      "name": "Beef",
+      "cal": 70,
+      "fat": 6,
+      "carbs": 0,
+      "prot": 3
+    },
+    {
+      "name": "Black Olives",
+      "cal": 25,
+      "fat": 2,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Premium Chicken",
+      "cal": 30,
+      "fat": 1,
+      "carbs": 1,
+      "prot": 4
+    },
+    {
+      "name": "Green Peppers",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Ham",
+      "cal": 20,
+      "fat": 1,
+      "carbs": 0,
+      "prot": 2
+    },
+    {
+      "name": "Banana Peppers",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Jalapeno Peppers",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Mushrooms",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 1
+    },
+    {
+      "name": "Onions",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Pepperoni",
+      "cal": 50,
+      "fat": 4,
+      "carbs": 0,
+      "prot": 2
+    },
+    {
+      "name": "Philly Steak",
+      "cal": 20,
+      "fat": 1,
+      "carbs": 1,
+      "prot": 2
+    },
+    {
+      "name": "Pineapple",
+      "cal": 15,
+      "fat": 0,
+      "carbs": 4,
+      "prot": 0
+    },
+    {
+      "name": "Italian Sausage",
+      "cal": 80,
+      "fat": 8,
+      "carbs": 0,
+      "prot": 3
+    },
+    {
+      "name": "Shredded Parmesan Asiago",
+      "cal": 25,
+      "fat": 2,
+      "carbs": 0,
+      "prot": 2
+    },
+    {
+      "name": "Spinach",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Diced Tomatoes",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Anchovies*",
+      "cal": 15,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 3
+    },
+    {
+      "name": "BBQ Chicken Topping*",
+      "cal": 25,
+      "fat": 0,
+      "carbs": 3,
+      "prot": 2
+    },
+    {
+      "name": "Chorizo*",
+      "cal": 50,
+      "fat": 4,
+      "carbs": 0,
+      "prot": 4
+    },
+    {
+      "name": "Fresh Diced Tomatoes*",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Garlic*",
+      "cal": 10,
+      "fat": 0,
+      "carbs": 2,
+      "prot": 0
+    },
+    {
+      "name": "Green Chile Peppers*",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Green Olives*",
+      "cal": 25,
+      "fat": 2,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Fresh Sliced Tomatoes*",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 2,
+      "prot": 0
+    },
+    {
+      "name": "Garlic Oil Blend",
+      "cal": 10,
+      "fat": 1,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Parmesan",
+      "cal": 5,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "HAM & BACON BREAKFAST PIZZA",
+      "cal": 250,
+      "fat": 12,
+      "carbs": 22,
+      "prot": 12
+    },
+    {
+      "name": "Breakfast Pizza Base",
+      "cal": 220,
+      "fat": 10,
+      "carbs": 22,
+      "prot": 9
+    },
+    {
+      "name": "BREAKFAST PIZZA",
+      "cal": 230,
+      "fat": 10,
+      "carbs": 23,
+      "prot": 12
+    },
+    {
+      "name": "Garlic Bread Bites",
+      "cal": 210,
+      "fat": 9,
+      "carbs": 27,
+      "prot": 5
+    },
+    {
+      "name": "Parmesan Bread Bites",
+      "cal": 210,
+      "fat": 9,
+      "carbs": 27,
+      "prot": 5
+    },
+    {
+      "name": "Stuffed Cheesy Bread",
+      "cal": 160,
+      "fat": 8,
+      "carbs": 15,
+      "prot": 5
+    },
+    {
+      "name": "Bacon & Jalapeno Stuffed Cheesy Bread",
+      "cal": 170,
+      "fat": 10,
+      "carbs": 15,
+      "prot": 6
+    },
+    {
+      "name": "Pepperoni Stuffed Cheesy Bread",
+      "cal": 170,
+      "fat": 10,
+      "carbs": 15,
+      "prot": 6
+    },
+    {
+      "name": "Spinach & Feta Stuffed Cheesy Bread",
+      "cal": 160,
+      "fat": 9,
+      "carbs": 15,
+      "prot": 6
+    },
+    {
+      "name": "Boneless Chicken",
+      "cal": 170,
+      "fat": 7,
+      "carbs": 18,
+      "prot": 9
+    },
+    {
+      "name": "Honey BBQ Wings",
+      "cal": 310,
+      "fat": 20,
+      "carbs": 22,
+      "prot": 15
+    },
+    {
+      "name": "Hot Buffalo Wings",
+      "cal": 260,
+      "fat": 20,
+      "carbs": 9,
+      "prot": 15
+    },
+    {
+      "name": "Mild Buffalo Wings",
+      "cal": 260,
+      "fat": 20,
+      "carbs": 10,
+      "prot": 15
+    },
+    {
+      "name": "Garlic Parmesan Wings",
+      "cal": 390,
+      "fat": 34,
+      "carbs": 10,
+      "prot": 15
+    },
+    {
+      "name": "Sweet Mango Habanero Wings",
+      "cal": 310,
+      "fat": 20,
+      "carbs": 21,
+      "prot": 15
+    },
+    {
+      "name": "Classic Hot Buffalo Loaded Chicken",
+      "cal": 200,
+      "fat": 11,
+      "carbs": 16,
+      "prot": 10
+    },
+    {
+      "name": "Crispy Bacon & Tomato Loaded Chicken",
+      "cal": 270,
+      "fat": 18,
+      "carbs": 16,
+      "prot": 12
+    },
+    {
+      "name": "Spicy Jalapeno & Pineapple Loaded Chicken",
+      "cal": 200,
+      "fat": 8,
+      "carbs": 23,
+      "prot": 9
+    },
+    {
+      "name": "Sweet BBQ Bacon Loaded Chicken",
+      "cal": 220,
+      "fat": 11,
+      "carbs": 22,
+      "prot": 11
+    },
+    {
+      "name": "Chocolate Lava Crunch Cake",
+      "cal": 350,
+      "fat": 17,
+      "carbs": 47,
+      "prot": 4
+    },
+    {
+      "name": "Marbled Cookie Brownie",
+      "cal": 200,
+      "fat": 10,
+      "carbs": 26,
+      "prot": 2
+    },
+    {
+      "name": "Cinnamon Bread Bites",
+      "cal": 230,
+      "fat": 9,
+      "carbs": 30,
+      "prot": 5
+    },
+    {
+      "name": "Garlic",
+      "cal": 250,
+      "fat": 28,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Hot Buffalo",
+      "cal": 15,
+      "fat": 1,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Marinara",
+      "cal": 30,
+      "fat": 0,
+      "carbs": 6,
+      "prot": 0
+    },
+    {
+      "name": "Sweet Icing",
+      "cal": 220,
+      "fat": 4,
+      "carbs": 52,
+      "prot": 0
+    },
+    {
+      "name": "Sweet Mango Habanero",
+      "cal": 70,
+      "fat": 0,
+      "carbs": 17,
+      "prot": 0
+    },
+    {
+      "name": "Cheddar Bacon Loaded Tots",
+      "cal": 240,
+      "fat": 16,
+      "carbs": 17,
+      "prot": 7
+    },
+    {
+      "name": "Buffalo Chicken",
+      "cal": 420,
+      "fat": 20,
+      "carbs": 39,
+      "prot": 20
+    },
+    {
+      "name": "Chicken Bacon Ranch",
+      "cal": 450,
+      "fat": 22,
+      "carbs": 37,
+      "prot": 23
+    },
+    {
+      "name": "Chicken Parm",
+      "cal": 400,
+      "fat": 15,
+      "carbs": 38,
+      "prot": 24
+    },
+    {
+      "name": "Italian",
+      "cal": 420,
+      "fat": 20,
+      "carbs": 37,
+      "prot": 21
+    },
+    {
+      "name": "Sweet & Spicy Chicken Habanero",
+      "cal": 390,
+      "fat": 14,
+      "carbs": 44,
+      "prot": 21
+    },
+    {
+      "name": "Chicken Alfredo",
+      "cal": 590,
+      "fat": 28,
+      "carbs": 60,
+      "prot": 24
+    },
+    {
+      "name": "Classic Garden Salad",
+      "cal": 70,
+      "fat": 4,
+      "carbs": 8,
+      "prot": 3
+    },
+    {
+      "name": "Chicken Caesar Salad",
+      "cal": 190,
+      "fat": 7,
+      "carbs": 14,
+      "prot": 19
+    },
+    {
+      "name": "Marzetti Garden Ranch Dressing",
+      "cal": 220,
+      "fat": 24,
+      "carbs": 2,
+      "prot": 1
+    },
+    {
+      "name": "Marzetti Cardini Caesar Dressing",
+      "cal": 230,
+      "fat": 25,
+      "carbs": 0,
+      "prot": 1
+    },
+    {
+      "name": "Marzetti Balsamic Vinaigrette Dressing",
+      "cal": 130,
+      "fat": 12,
+      "carbs": 4,
+      "prot": 0
+    },
+    {
+      "name": "Ken's Ranch Dressing",
+      "cal": 190,
+      "fat": 20,
+      "carbs": 2,
+      "prot": 1
+    },
+    {
+      "name": "The pizza products listed in this publication, when made with approved Dominos Pizza ingredients, will provide the nutritional composition as indicated. Information may vary slightly depending on Ken's Caesar Dressing",
+      "cal": 210,
+      "fat": 23,
+      "carbs": 1,
+      "prot": 1
+    },
+    {
+      "name": "location and supplier. The nutrition information is generated by the industry standard Genesis R&D Nutritional software. The ingredient listings are provided by ingredient manufacturers. Ken's Lite Balsamic with Olive Oil",
+      "cal": 100,
+      "fat": 8,
+      "carbs": 4,
+      "prot": 0
+    },
+    {
+      "name": "Chicken Parm Sandwiches, Pasta, Chicken & Sides",
+      "cal": 400,
+      "fat": 15,
+      "carbs": 38,
+      "prot": 24
+    },
+    {
+      "name": "Ken's Caesar Dressing",
+      "cal": 210,
+      "fat": 23,
+      "carbs": 1,
+      "prot": 1
+    },
+    {
+      "name": "Ken's Lite Balsamic with Olive Oil",
+      "cal": 100,
+      "fat": 8,
+      "carbs": 4,
+      "prot": 0
+    },
+    {
+      "name": "Classic",
+      "cal": 430,
+      "fat": 20,
+      "carbs": 40,
+      "prot": 21
+    },
+    {
+      "name": "Bacon Cheddar",
+      "cal": 510,
+      "fat": 24,
+      "carbs": 48,
+      "prot": 23
+    },
+    {
+      "name": "Buffalo Ranch",
+      "cal": 530,
+      "fat": 30,
+      "carbs": 39,
+      "prot": 23
+    },
+    {
+      "name": "Mushroom Delight",
+      "cal": 430,
+      "fat": 21,
+      "carbs": 39,
+      "prot": 21
+    },
+    {
+      "name": "Zesty",
+      "cal": 460,
+      "fat": 23,
+      "carbs": 40,
+      "prot": 22
+    },
+    {
+      "name": "Hoagie Bun",
+      "cal": 190,
+      "fat": 3,
+      "carbs": 34,
+      "prot": 7
+    },
+    {
+      "name": "Hoagie Beef Patty",
+      "cal": 140,
+      "fat": 10,
+      "carbs": 2,
+      "prot": 10
+    },
+    {
+      "name": "Anchovies",
+      "cal": 15,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 3
+    },
+    {
+      "name": "Green Olives",
+      "cal": 10,
+      "fat": 1,
+      "carbs": 0,
+      "prot": 0
+    }
+  ],
+  "Burger King": [
+    {
+      "name": "WHOPPER Jr",
+      "cal": 361,
+      "fat": 20,
+      "carbs": 29,
+      "prot": 16
+    },
+    {
+      "name": "WHOPPER Jr with Cheese",
+      "cal": 399,
+      "fat": 23,
+      "carbs": 29,
+      "prot": 19
+    },
+    {
+      "name": "WHOPPER",
+      "cal": 764,
+      "fat": 46,
+      "carbs": 50,
+      "prot": 38
+    },
+    {
+      "name": "WHOPPER with Cheese",
+      "cal": 811,
+      "fat": 49,
+      "carbs": 52,
+      "prot": 41
+    },
+    {
+      "name": "WHOPPER Double",
+      "cal": 1140,
+      "fat": 75,
+      "carbs": 49,
+      "prot": 67
+    },
+    {
+      "name": "WHOPPER Double with Cheese",
+      "cal": 1216,
+      "fat": 81,
+      "carbs": 50,
+      "prot": 72
+    },
+    {
+      "name": "BBQ Bacon Double Cheeseburger",
+      "cal": 511,
+      "fat": 35,
+      "carbs": 14,
+      "prot": 35
+    },
+    {
+      "name": "Hamburger",
+      "cal": 291,
+      "fat": 14,
+      "carbs": 24,
+      "prot": 17
+    },
+    {
+      "name": "Cheeseburger",
+      "cal": 329,
+      "fat": 17,
+      "carbs": 25,
+      "prot": 19
+    },
+    {
+      "name": "Double Cheeseburger",
+      "cal": 507,
+      "fat": 31,
+      "carbs": 25,
+      "prot": 32
+    },
+    {
+      "name": "Triple Cheeseburger",
+      "cal": 697,
+      "fat": 45,
+      "carbs": 27,
+      "prot": 46
+    },
+    {
+      "name": "Creamy Mayo Cheeseburger",
+      "cal": 406,
+      "fat": 24,
+      "carbs": 28,
+      "prot": 19
+    },
+    {
+      "name": "BBQ Rodeo",
+      "cal": 416,
+      "fat": 23,
+      "carbs": 35,
+      "prot": 17
+    },
+    {
+      "name": "The Bomb",
+      "cal": 384,
+      "fat": 30,
+      "carbs": 6,
+      "prot": 22
+    },
+    {
+      "name": "XL Bomb (Double)",
+      "cal": 1247,
+      "fat": 92,
+      "carbs": 29,
+      "prot": 76
+    },
+    {
+      "name": "XL Bomb (Single)",
+      "cal": 871,
+      "fat": 63,
+      "carbs": 30,
+      "prot": 46
+    },
+    {
+      "name": "XL Creamy Mayo Cheeseburger (Double)",
+      "cal": 1288,
+      "fat": 82,
+      "carbs": 66,
+      "prot": 72
+    },
+    {
+      "name": "XL Creamy Mayo Cheeseburger (Single)",
+      "cal": 852,
+      "fat": 53,
+      "carbs": 51,
+      "prot": 43
+    },
+    {
+      "name": "XL BBQ Rodeo (Double)",
+      "cal": 1314,
+      "fat": 86,
+      "carbs": 62,
+      "prot": 73
+    },
+    {
+      "name": "XL BBQ Rodeo (Single)",
+      "cal": 938,
+      "fat": 57,
+      "carbs": 62,
+      "prot": 44
+    },
+    {
+      "name": "Rodeo Mega Stackers - Beef Single",
+      "cal": 805,
+      "fat": 52,
+      "carbs": 39,
+      "prot": 45
+    },
+    {
+      "name": "Rodeo Mega Stackers - Beef Double",
+      "cal": 1217,
+      "fat": 84,
+      "carbs": 39,
+      "prot": 76
+    },
+    {
+      "name": "All American Steakhouse",
+      "cal": 820,
+      "fat": 56,
+      "carbs": 24,
+      "prot": 55
+    },
+    {
+      "name": "New York Steakhouse",
+      "cal": 1006,
+      "fat": 68,
+      "carbs": 40,
+      "prot": 59
+    },
+    {
+      "name": "Streaky Bacon Steakhouse",
+      "cal": 932,
+      "fat": 59,
+      "carbs": 44,
+      "prot": 56
+    },
+    {
+      "name": "Original Fried Chicken",
+      "cal": 759,
+      "fat": 37,
+      "carbs": 80,
+      "prot": 26
+    },
+    {
+      "name": "Spicy Southern Fried Chicken",
+      "cal": 732,
+      "fat": 36,
+      "carbs": 73,
+      "prot": 29
+    },
+    {
+      "name": "Cheese & Bacon Fried Chicken",
+      "cal": 736,
+      "fat": 46,
+      "carbs": 40,
+      "prot": 40
+    },
+    {
+      "name": "Plant Based Whopper",
+      "cal": 563,
+      "fat": 28,
+      "carbs": 49,
+      "prot": 29
+    },
+    {
+      "name": "Plant Based Double Whopper",
+      "cal": 733,
+      "fat": 40,
+      "carbs": 44,
+      "prot": 49
+    },
+    {
+      "name": "Plant Based Whopper with Cheese",
+      "cal": 635,
+      "fat": 34,
+      "carbs": 48,
+      "prot": 34
+    },
+    {
+      "name": "Plant Based BK Chook",
+      "cal": 617,
+      "fat": 34,
+      "carbs": 61,
+      "prot": 17
+    },
+    {
+      "name": "Plant Based BK Chook with Cheese",
+      "cal": 691,
+      "fat": 40,
+      "carbs": 62,
+      "prot": 21
+    },
+    {
+      "name": "Plant Based BK Double Chook",
+      "cal": 844,
+      "fat": 48,
+      "carbs": 77,
+      "prot": 26
+    },
+    {
+      "name": "Plant Based BK Chook Long Rodeo",
+      "cal": 753,
+      "fat": 37,
+      "carbs": 77,
+      "prot": 28
+    },
+    {
+      "name": "Plant Based BK Hawaiian Chook",
+      "cal": 859,
+      "fat": 46,
+      "carbs": 85,
+      "prot": 26
+    },
+    {
+      "name": "Salad Burger",
+      "cal": 544,
+      "fat": 26,
+      "carbs": 64,
+      "prot": 14
+    },
+    {
+      "name": "Vege Burger",
+      "cal": 796,
+      "fat": 43,
+      "carbs": 84,
+      "prot": 18
+    },
+    {
+      "name": "BK Chicken",
+      "cal": 593,
+      "fat": 34,
+      "carbs": 46,
+      "prot": 26
+    },
+    {
+      "name": "BK Chicken with Cheese",
+      "cal": 670,
+      "fat": 40,
+      "carbs": 46,
+      "prot": 31
+    },
+    {
+      "name": "BK Double Chicken",
+      "cal": 796,
+      "fat": 42,
+      "carbs": 60,
+      "prot": 45
+    },
+    {
+      "name": "BK Chicken Long Rodeo",
+      "cal": 628,
+      "fat": 30,
+      "carbs": 58,
+      "prot": 31
+    },
+    {
+      "name": "Hawaiian BK Chicken",
+      "cal": 853,
+      "fat": 51,
+      "carbs": 58,
+      "prot": 40
+    },
+    {
+      "name": "Crispy Chicken Burger",
+      "cal": 519,
+      "fat": 30,
+      "carbs": 44,
+      "prot": 18
+    },
+    {
+      "name": "Chicken Nuggets - 10pk",
+      "cal": 490,
+      "fat": 34,
+      "carbs": 23,
+      "prot": 23
+    },
+    {
+      "name": "Chicken Nuggets - 20pk",
+      "cal": 1090,
+      "fat": 76,
+      "carbs": 50,
+      "prot": 52
+    },
+    {
+      "name": "Rodeo Mega Stackers - Chicken Single",
+      "cal": 716,
+      "fat": 37,
+      "carbs": 66,
+      "prot": 30
+    },
+    {
+      "name": "Rodeo Mega Stackers - Chicken Double",
+      "cal": 949,
+      "fat": 53,
+      "carbs": 75,
+      "prot": 43
+    },
+    {
+      "name": "Rodeo Mega Stackers - Chicken Triple",
+      "cal": 1183,
+      "fat": 68,
+      "carbs": 87,
+      "prot": 56
+    },
+    {
+      "name": "Thick Cut Fries - Small",
+      "cal": 126,
+      "fat": 4,
+      "carbs": 20,
+      "prot": 2
+    },
+    {
+      "name": "Thick Cut Fries - Regular",
+      "cal": 161,
+      "fat": 5,
+      "carbs": 26,
+      "prot": 3
+    },
+    {
+      "name": "Thick Cut Fries - Large",
+      "cal": 195,
+      "fat": 6,
+      "carbs": 31,
+      "prot": 4
+    },
+    {
+      "name": "Hash Bites - Small",
+      "cal": 150,
+      "fat": 7,
+      "carbs": 20,
+      "prot": 2
+    },
+    {
+      "name": "Hash Bites - Regular",
+      "cal": 236,
+      "fat": 10,
+      "carbs": 34,
+      "prot": 3
+    },
+    {
+      "name": "Hash Bites - Large",
+      "cal": 374,
+      "fat": 16,
+      "carbs": 52,
+      "prot": 5
+    },
+    {
+      "name": "King Box - Nuggets",
+      "cal": 504,
+      "fat": 20,
+      "carbs": 57,
+      "prot": 24
+    },
+    {
+      "name": "King Box - Cheeseburger",
+      "cal": 623,
+      "fat": 28,
+      "carbs": 69,
+      "prot": 24
+    },
+    {
+      "name": "Onion Rings - 6 pack",
+      "cal": 198,
+      "fat": 10,
+      "carbs": 23,
+      "prot": 4
+    },
+    {
+      "name": "Onion Rings - 9 pack",
+      "cal": 296,
+      "fat": 13,
+      "carbs": 39,
+      "prot": 6
+    },
+    {
+      "name": "Coke Range",
+      "cal": 133,
+      "fat": 0,
+      "carbs": 33,
+      "prot": 0
+    },
+    {
+      "name": "Fanta Range",
+      "cal": 157,
+      "fat": 0,
+      "carbs": 39,
+      "prot": 0
+    },
+    {
+      "name": "Frozen Coke Range",
+      "cal": 157,
+      "fat": 0,
+      "carbs": 39,
+      "prot": 0
+    },
+    {
+      "name": "Frozen Keri",
+      "cal": 89,
+      "fat": 0,
+      "carbs": 22,
+      "prot": 0
+    },
+    {
+      "name": "Chocolate Shake",
+      "cal": 369,
+      "fat": 5,
+      "carbs": 75,
+      "prot": 6
+    },
+    {
+      "name": "Strawberry Shake",
+      "cal": 323,
+      "fat": 5,
+      "carbs": 64,
+      "prot": 6
+    },
+    {
+      "name": "Large",
+      "cal": 784,
+      "fat": 10,
+      "carbs": 162,
+      "prot": 12
+    },
+    {
+      "name": "Banana Shake Small",
+      "cal": 327,
+      "fat": 5,
+      "carbs": 64,
+      "prot": 6
+    },
+    {
+      "name": "Medium",
+      "cal": 560,
+      "fat": 7,
+      "carbs": 115,
+      "prot": 9
+    },
+    {
+      "name": "Lime Shake Small",
+      "cal": 323,
+      "fat": 5,
+      "carbs": 64,
+      "prot": 6
+    },
+    {
+      "name": "Super Shake Chocolate",
+      "cal": 948,
+      "fat": 10,
+      "carbs": 204,
+      "prot": 10
+    },
+    {
+      "name": "Strawberry",
+      "cal": 883,
+      "fat": 10,
+      "carbs": 188,
+      "prot": 10
+    },
+    {
+      "name": "Banana",
+      "cal": 889,
+      "fat": 10,
+      "carbs": 190,
+      "prot": 10
+    },
+    {
+      "name": "Lime",
+      "cal": 884,
+      "fat": 10,
+      "carbs": 188,
+      "prot": 10
+    },
+    {
+      "name": "Soft Serve Cone",
+      "cal": 130,
+      "fat": 4,
+      "carbs": 20,
+      "prot": 3
+    },
+    {
+      "name": "Plain Sundae",
+      "cal": 177,
+      "fat": 6,
+      "carbs": 26,
+      "prot": 5
+    },
+    {
+      "name": "Caramel Sundae",
+      "cal": 549,
+      "fat": 6,
+      "carbs": 119,
+      "prot": 5
+    },
+    {
+      "name": "Chocolate Sundae",
+      "cal": 558,
+      "fat": 8,
+      "carbs": 116,
+      "prot": 5
+    },
+    {
+      "name": "Strawberry Sundae",
+      "cal": 434,
+      "fat": 6,
+      "carbs": 90,
+      "prot": 5
+    },
+    {
+      "name": "Chicken Fries (9 Pack)",
+      "cal": 391,
+      "fat": 27,
+      "carbs": 23,
+      "prot": 14
+    },
+    {
+      "name": "Chicken Fries (4 Pack King Box)",
+      "cal": 555,
+      "fat": 27,
+      "carbs": 60,
+      "prot": 18
+    },
+    {
+      "name": "Curly Fries (Large)",
+      "cal": 485,
+      "fat": 28,
+      "carbs": 52,
+      "prot": 6
+    },
+    {
+      "name": "Curly Fries (Share Box)",
+      "cal": 889,
+      "fat": 52,
+      "carbs": 95,
+      "prot": 10
+    },
+    {
+      "name": "Tropical Whopper",
+      "cal": 1045,
+      "fat": 70,
+      "carbs": 49,
+      "prot": 55
+    },
+    {
+      "name": "Tropical Fried Chicken",
+      "cal": 946,
+      "fat": 53,
+      "carbs": 77,
+      "prot": 40
+    },
+    {
+      "name": "Mandalorian Whopper",
+      "cal": 766,
+      "fat": 56,
+      "carbs": 26,
+      "prot": 39
+    },
+    {
+      "name": "Mandalorian Chicken",
+      "cal": 758,
+      "fat": 46,
+      "carbs": 57,
+      "prot": 29
+    },
+    {
+      "name": "Cookie Dough Bites (4 Pack)",
+      "cal": 359,
+      "fat": 15,
+      "carbs": 51,
+      "prot": 5
+    },
+    {
+      "name": "Strawberry Cheesecake",
+      "cal": 227,
+      "fat": 10,
+      "carbs": 33,
+      "prot": 1
+    },
+    {
+      "name": "Popping Candy Sachet",
+      "cal": 46,
+      "fat": 0,
+      "carbs": 12,
+      "prot": 0
+    },
+    {
+      "name": "King Fusion Maple Toffee Crunch Sundae",
+      "cal": 650,
+      "fat": 9,
+      "carbs": 136,
+      "prot": 6
+    },
+    {
+      "name": "King Fusion Bubblegum Marshmallow Sundae",
+      "cal": 285,
+      "fat": 6,
+      "carbs": 52,
+      "prot": 6
+    },
+    {
+      "name": "Bubblegum Sundae",
+      "cal": 196,
+      "fat": 6,
+      "carbs": 30,
+      "prot": 5
+    },
+    {
+      "name": "Bubblegum Shake Small",
+      "cal": 215,
+      "fat": 5,
+      "carbs": 36,
+      "prot": 6
+    }
+  ],
+  "McDonald's": [
+    {
+      "name": "Grilled Chicken",
+      "cal": 610,
+      "fat": 26,
+      "carbs": 73,
+      "prot": 45
+    },
+    {
+      "name": "McChicken",
+      "cal": 370,
+      "fat": 17,
+      "carbs": 27,
+      "prot": 14
+    },
+    {
+      "name": "Ranch",
+      "cal": 440,
+      "fat": 21,
+      "carbs": 46,
+      "prot": 20
+    },
+    {
+      "name": "Filet-O-Fish",
+      "cal": 390,
+      "fat": 19,
+      "carbs": 24,
+      "prot": 15
+    },
+    {
+      "name": "McRib",
+      "cal": 500,
+      "fat": 26,
+      "carbs": 41,
+      "prot": 22
+    },
+    {
+      "name": "& Bacon",
+      "cal": 690,
+      "fat": 34,
+      "carbs": 60,
+      "prot": 36
+    },
+    {
+      "name": "McWrap Chicken",
+      "cal": 500,
+      "fat": 19,
+      "carbs": 66,
+      "prot": 41
+    },
+    {
+      "name": "& Ranch",
+      "cal": 660,
+      "fat": 34,
+      "carbs": 52,
+      "prot": 31
+    },
+    {
+      "name": "Sweet Chili",
+      "cal": 590,
+      "fat": 25,
+      "carbs": 48,
+      "prot": 27
+    },
+    {
+      "name": "Big Mac",
+      "cal": 540,
+      "fat": 28,
+      "carbs": 40,
+      "prot": 25
+    },
+    {
+      "name": "Pounder with",
+      "cal": 540,
+      "fat": 28,
+      "carbs": 46,
+      "prot": 31
+    },
+    {
+      "name": "Hamburger",
+      "cal": 250,
+      "fat": 8,
+      "carbs": 20,
+      "prot": 12
+    },
+    {
+      "name": "Cheeseburger",
+      "cal": 300,
+      "fat": 12,
+      "carbs": 29,
+      "prot": 15
+    },
+    {
+      "name": "McDouble",
+      "cal": 390,
+      "fat": 18,
+      "carbs": 35,
+      "prot": 22
+    },
+    {
+      "name": "Bacon McDouble",
+      "cal": 460,
+      "fat": 23,
+      "carbs": 47,
+      "prot": 28
+    },
+    {
+      "name": "Daily Double",
+      "cal": 440,
+      "fat": 24,
+      "carbs": 32,
+      "prot": 22
+    },
+    {
+      "name": "Jalapeo Double",
+      "cal": 440,
+      "fat": 24,
+      "carbs": 41,
+      "prot": 23
+    },
+    {
+      "name": "Chicken Deluxe",
+      "cal": 530,
+      "fat": 22,
+      "carbs": 42,
+      "prot": 25
+    },
+    {
+      "name": "Chicken",
+      "cal": 360,
+      "fat": 6,
+      "carbs": 40,
+      "prot": 33
+    },
+    {
+      "name": "Salad with Grilled",
+      "cal": 270,
+      "fat": 9,
+      "carbs": 32,
+      "prot": 32
+    },
+    {
+      "name": "McNuggets (10",
+      "cal": 470,
+      "fat": 30,
+      "carbs": 37,
+      "prot": 22
+    },
+    {
+      "name": "McNuggets (20",
+      "cal": 940,
+      "fat": 59,
+      "carbs": 75,
+      "prot": 44
+    },
+    {
+      "name": "McNuggets (6",
+      "cal": 280,
+      "fat": 18,
+      "carbs": 22,
+      "prot": 13
+    },
+    {
+      "name": "Ranch Salad with",
+      "cal": 310,
+      "fat": 14,
+      "carbs": 47,
+      "prot": 38
+    },
+    {
+      "name": "McNuggets (4",
+      "cal": 190,
+      "fat": 12,
+      "carbs": 15,
+      "prot": 9
+    },
+    {
+      "name": "Salad with Crispy",
+      "cal": 410,
+      "fat": 22,
+      "carbs": 31,
+      "prot": 23
+    },
+    {
+      "name": "Crispy Chicken",
+      "cal": 750,
+      "fat": 38,
+      "carbs": 72,
+      "prot": 36
+    },
+    {
+      "name": "Biscuit (Regular",
+      "cal": 540,
+      "fat": 32,
+      "carbs": 61,
+      "prot": 25
+    },
+    {
+      "name": "McMuffin with",
+      "cal": 450,
+      "fat": 28,
+      "carbs": 36,
+      "prot": 21
+    },
+    {
+      "name": "Sausage Burrito",
+      "cal": 300,
+      "fat": 16,
+      "carbs": 33,
+      "prot": 12
+    },
+    {
+      "name": "Egg McMuffin",
+      "cal": 300,
+      "fat": 13,
+      "carbs": 31,
+      "prot": 17
+    },
+    {
+      "name": "(Regular Size",
+      "cal": 430,
+      "fat": 27,
+      "carbs": 45,
+      "prot": 11
+    },
+    {
+      "name": "Cheese",
+      "cal": 460,
+      "fat": 21,
+      "carbs": 52,
+      "prot": 19
+    },
+    {
+      "name": "Cheese Bagel",
+      "cal": 530,
+      "fat": 23,
+      "carbs": 56,
+      "prot": 27
+    },
+    {
+      "name": "Cinnamon Melts",
+      "cal": 460,
+      "fat": 19,
+      "carbs": 15,
+      "prot": 6
+    },
+    {
+      "name": "Hotcakes",
+      "cal": 350,
+      "fat": 9,
+      "carbs": 24,
+      "prot": 8
+    },
+    {
+      "name": "HASH BROWNS",
+      "cal": 150,
+      "fat": 9,
+      "carbs": 13,
+      "prot": 1
+    },
+    {
+      "name": "(Large Size",
+      "cal": 800,
+      "fat": 52,
+      "carbs": 70,
+      "prot": 28
+    },
+    {
+      "name": "with Egg (Large",
+      "cal": 570,
+      "fat": 37,
+      "carbs": 53,
+      "prot": 18
+    },
+    {
+      "name": "Oatmeal without",
+      "cal": 260,
+      "fat": 4,
+      "carbs": 5,
+      "prot": 5
+    },
+    {
+      "name": "Salad (without",
+      "cal": 140,
+      "fat": 7,
+      "carbs": 1,
+      "prot": 7
+    },
+    {
+      "name": "Ranch Salad",
+      "cal": 190,
+      "fat": 12,
+      "carbs": 22,
+      "prot": 14
+    },
+    {
+      "name": "Southwest Salad",
+      "cal": 160,
+      "fat": 7,
+      "carbs": 8,
+      "prot": 8
+    },
+    {
+      "name": "Kids Fries",
+      "cal": 110,
+      "fat": 5,
+      "carbs": 3,
+      "prot": 1
+    },
+    {
+      "name": "Mozzarella Sticks",
+      "cal": 200,
+      "fat": 10,
+      "carbs": 23,
+      "prot": 9
+    },
+    {
+      "name": "Chocolate McCaf Shake",
+      "cal": 560,
+      "fat": 16,
+      "carbs": 10,
+      "prot": 12
+    },
+    {
+      "name": "Shake (Small) Strawberry McCaf Shake",
+      "cal": 550,
+      "fat": 16,
+      "carbs": 7,
+      "prot": 12
+    },
+    {
+      "name": "Iced Coffee",
+      "cal": 140,
+      "fat": 4,
+      "carbs": 1,
+      "prot": 1
+    },
+    {
+      "name": "Chocolate Chip",
+      "cal": 520,
+      "fat": 22,
+      "carbs": 5,
+      "prot": 8
+    },
+    {
+      "name": "Smoothie (Small)",
+      "cal": 210,
+      "fat": 0,
+      "carbs": 2,
+      "prot": 2
+    },
+    {
+      "name": "Chocolate",
+      "cal": 360,
+      "fat": 13,
+      "carbs": 8,
+      "prot": 11
+    },
+    {
+      "name": "(Small) Minute Maid 100% Apple",
+      "cal": 80,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "McCafe Shake",
+      "cal": 530,
+      "fat": 15,
+      "carbs": 7,
+      "prot": 11
+    },
+    {
+      "name": "Caramel Mocha",
+      "cal": 270,
+      "fat": 11,
+      "carbs": 6,
+      "prot": 8
+    },
+    {
+      "name": "Chocolate Mocha",
+      "cal": 320,
+      "fat": 11,
+      "carbs": 7,
+      "prot": 11
+    },
+    {
+      "name": "French Vanilla",
+      "cal": 120,
+      "fat": 7,
+      "carbs": 4,
+      "prot": 1
+    },
+    {
+      "name": "Caramel (Large)",
+      "cal": 260,
+      "fat": 9,
+      "carbs": 3,
+      "prot": 2
+    },
+    {
+      "name": "Caramel",
+      "cal": 180,
+      "fat": 7,
+      "carbs": 2,
+      "prot": 1
+    },
+    {
+      "name": "Caramel (Small)",
+      "cal": 130,
+      "fat": 4,
+      "carbs": 2,
+      "prot": 1
+    },
+    {
+      "name": "Hazelnut (Large)",
+      "cal": 250,
+      "fat": 9,
+      "carbs": 3,
+      "prot": 2
+    },
+    {
+      "name": "Hazelnut",
+      "cal": 180,
+      "fat": 7,
+      "carbs": 2,
+      "prot": 1
+    },
+    {
+      "name": "Hazelnut (Small)",
+      "cal": 130,
+      "fat": 4,
+      "carbs": 1,
+      "prot": 1
+    },
+    {
+      "name": "Regular",
+      "cal": 190,
+      "fat": 7,
+      "carbs": 2,
+      "prot": 1
+    },
+    {
+      "name": "Chocolate Milk",
+      "cal": 130,
+      "fat": 0,
+      "carbs": 6,
+      "prot": 9
+    },
+    {
+      "name": "Minute Maid Orange Juice",
+      "cal": 150,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 2
+    },
+    {
+      "name": "Sprite (Small)",
+      "cal": 140,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Hi-C Orange Lavaburst (Small)",
+      "cal": 160,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "(Medium) POWERade Mountain Blast",
+      "cal": 80,
+      "fat": 0,
+      "carbs": 3,
+      "prot": 0
+    },
+    {
+      "name": "Coca-Cola Classic (Extra",
+      "cal": 100,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Classic (Medium)",
+      "cal": 200,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Hi-C Orange Lavaburst (Extra",
+      "cal": 110,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Lavaburst (Large)",
+      "cal": 310,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Hi-C Orange Lavaburst",
+      "cal": 230,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "(Medium) Minute Maid Orange Juice",
+      "cal": 280,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 4
+    },
+    {
+      "name": "(Large) POWERade Mountain Blast",
+      "cal": 60,
+      "fat": 0,
+      "carbs": 2,
+      "prot": 0
+    },
+    {
+      "name": "(Extra Small) POWERade Mountain Blast",
+      "cal": 160,
+      "fat": 0,
+      "carbs": 6,
+      "prot": 0
+    },
+    {
+      "name": "POWERade Mountain Blast",
+      "cal": 120,
+      "fat": 0,
+      "carbs": 4,
+      "prot": 0
+    },
+    {
+      "name": "Sprite (Large)",
+      "cal": 280,
+      "fat": 0,
+      "carbs": 3,
+      "prot": 0
+    },
+    {
+      "name": "Hot Chocolate",
+      "cal": 350,
+      "fat": 13,
+      "carbs": 8,
+      "prot": 12
+    },
+    {
+      "name": "Lemonade",
+      "cal": 100,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Lemonade (Extra",
+      "cal": 250,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 1
+    },
+    {
+      "name": "(Large) Iced Strawberry Lemonade (Extra",
+      "cal": 310,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 1
+    },
+    {
+      "name": "Iced Lemonade",
+      "cal": 140,
+      "fat": 0,
+      "carbs": 4,
+      "prot": 0
+    },
+    {
+      "name": "Strawberry",
+      "cal": 260,
+      "fat": 0,
+      "carbs": 7,
+      "prot": 0
+    },
+    {
+      "name": "(Large) Chocolate McCaf Shake",
+      "cal": 560,
+      "fat": 16,
+      "carbs": 10,
+      "prot": 12
+    },
+    {
+      "name": "Vanilla Latte",
+      "cal": 190,
+      "fat": 0,
+      "carbs": 5,
+      "prot": 10
+    },
+    {
+      "name": "with Nonfat Milk",
+      "cal": 280,
+      "fat": 4,
+      "carbs": 7,
+      "prot": 12
+    },
+    {
+      "name": "Pomegranate",
+      "cal": 340,
+      "fat": 1,
+      "carbs": 3,
+      "prot": 4
+    },
+    {
+      "name": "Smoothie (Large)",
+      "cal": 340,
+      "fat": 1,
+      "carbs": 3,
+      "prot": 4
+    },
+    {
+      "name": "Smoothie",
+      "cal": 260,
+      "fat": 1,
+      "carbs": 2,
+      "prot": 3
+    },
+    {
+      "name": "Nonfat Milk",
+      "cal": 280,
+      "fat": 5,
+      "carbs": 6,
+      "prot": 10
+    },
+    {
+      "name": "Mocha (Medium)",
+      "cal": 330,
+      "fat": 12,
+      "carbs": 7,
+      "prot": 9
+    },
+    {
+      "name": "Banana",
+      "cal": 330,
+      "fat": 1,
+      "carbs": 3,
+      "prot": 5
+    },
+    {
+      "name": "(Medium) Strawberry McCaf Shake",
+      "cal": 690,
+      "fat": 20,
+      "carbs": 9,
+      "prot": 15
+    },
+    {
+      "name": "Mocha (Small)",
+      "cal": 340,
+      "fat": 11,
+      "carbs": 6,
+      "prot": 10
+    },
+    {
+      "name": "Mocha (Large)",
+      "cal": 500,
+      "fat": 17,
+      "carbs": 10,
+      "prot": 16
+    },
+    {
+      "name": "Latte (Small)",
+      "cal": 170,
+      "fat": 9,
+      "carbs": 5,
+      "prot": 9
+    },
+    {
+      "name": "Latte (Medium)",
+      "cal": 210,
+      "fat": 10,
+      "carbs": 6,
+      "prot": 11
+    },
+    {
+      "name": "Latte (Large)",
+      "cal": 280,
+      "fat": 14,
+      "carbs": 8,
+      "prot": 15
+    },
+    {
+      "name": "Parfait Chocolate McCaf Shake",
+      "cal": 700,
+      "fat": 20,
+      "carbs": 13,
+      "prot": 15
+    },
+    {
+      "name": "(Medium) Chocolate McCaf Shake",
+      "cal": 850,
+      "fat": 23,
+      "carbs": 16,
+      "prot": 19
+    },
+    {
+      "name": "Fat Ice Cream",
+      "cal": 170,
+      "fat": 4,
+      "carbs": 3,
+      "prot": 5
+    },
+    {
+      "name": "Sundae McFlurry with M&M'S Chocolate",
+      "cal": 650,
+      "fat": 23,
+      "carbs": 7,
+      "prot": 13
+    },
+    {
+      "name": "OREO Cookies",
+      "cal": 520,
+      "fat": 17,
+      "carbs": 11,
+      "prot": 12
+    },
+    {
+      "name": "(12 fl oz cup) Chocolate McCaf Shake",
+      "cal": 560,
+      "fat": 16,
+      "carbs": 10,
+      "prot": 12
+    },
+    {
+      "name": "M&M'S",
+      "cal": 430,
+      "fat": 15,
+      "carbs": 5,
+      "prot": 9
+    },
+    {
+      "name": "McFlurry with",
+      "cal": 340,
+      "fat": 11,
+      "carbs": 7,
+      "prot": 8
+    },
+    {
+      "name": "OREO Cookies Strawberry McCaf Shake",
+      "cal": 690,
+      "fat": 20,
+      "carbs": 9,
+      "prot": 15
+    },
+    {
+      "name": "Fried Cherry Pie",
+      "cal": 230,
+      "fat": 10,
+      "carbs": 6,
+      "prot": 2
+    },
+    {
+      "name": "Low Fat Sesame",
+      "cal": 80,
+      "fat": 2,
+      "carbs": 17,
+      "prot": 1
+    },
+    {
+      "name": "Honey",
+      "cal": 50,
+      "fat": 0,
+      "carbs": 0,
+      "prot": 0
+    },
+    {
+      "name": "Hotcake Syrup",
+      "cal": 180,
+      "fat": 0,
+      "carbs": 1,
+      "prot": 0
+    },
+    {
+      "name": "Tartar Sauce Cup",
+      "cal": 140,
+      "fat": 15,
+      "carbs": 6,
+      "prot": 0
+    }
+  ]
+}

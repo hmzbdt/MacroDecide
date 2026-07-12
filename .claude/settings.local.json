@@ -23,7 +23,20 @@
       "Bash(grep '\"\"expo\"\"' /c/Users/Hamza/Documents/Apps/MacroDecide/package.json)",
       "Bash(npx tsc:*)",
       "Bash(python3:*)",
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "PowerShell(Get-Content \"C:\\\\Users\\\\Hamza\\\\Documents\\\\Apps\\\\MacroDecide\\\\src\\\\data\\\\verifiedMenus.js\" -Encoding UTF8 | ForEach-Object { $_ } | Select-String \"Wingstop\")",
+      "Bash(python -c \"import sys,json; p=json.load\\(sys.stdin\\); deps={**p.get\\('dependencies',{}\\), **p.get\\('devDependencies',{}\\)}; [print\\(k,v\\) for k,v in deps.items\\(\\) if any\\(x in k for x in ['slider','Slider','expo-']\\)]\")",
+      "Bash(python -c \"import camelot; print\\('camelot OK'\\)\")",
+      "Bash(python -c \"import pdfplumber; print\\('pdfplumber OK'\\)\")",
+      "Bash(python *)",
+      "Bash(wait)",
+      "Bash(git *)",
+      "Bash(npm install *)",
+      "Bash(npm list *)",
+      "Bash(cat src/config.js)",
+      "Bash(cat src/config.ts)",
+      "Bash(cat src/config/index.js)",
+      "PowerShell(cd \"C:\\\\Users\\\\Hamza\\\\Documents\\\\Apps\\\\MacroDecide\"; $d = Get-Content src/data/raw_pdfs/all_extracted.json | ConvertFrom-Json; $d.PSObject.Properties.Name)"
     ]
   }
 }

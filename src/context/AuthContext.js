@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -26,6 +26,7 @@ export function AuthProvider({ children }) {
   const [isAdmin,    setIsAdmin]    = useState(false);
   const [isPremium,  setIsPremium]  = useState(false);
   const [scanTokens, setScanTokens] = useState(3);
+  const isAdminRef = useRef(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -34,18 +35,23 @@ export function AuthProvider({ children }) {
         try {
           const snap = await getDoc(doc(db, 'users', u.uid));
           const data = snap.data() ?? {};
-          setIsAdmin(data.isAdmin === true);
+          const adminFlag = data.isAdmin === true;
+          isAdminRef.current = adminFlag;
+          setIsAdmin(adminFlag);
           setScanTokens(data.scanTokens ?? 3);
+          if (adminFlag) setIsPremium(true);
         } catch {
+          isAdminRef.current = false;
           setIsAdmin(false);
         }
 
         try {
           await rcLogIn(u.uid);
           const info = await getCustomerInfo();
-          setIsPremium(hasEntitlement(info));
+          if (!isAdminRef.current) setIsPremium(hasEntitlement(info));
         } catch {}
       } else {
+        isAdminRef.current = false;
         setIsAdmin(false);
         setIsPremium(false);
         setScanTokens(3);
@@ -60,7 +66,7 @@ export function AuthProvider({ children }) {
     let remove;
     try {
       remove = addCustomerInfoListener((info) => {
-        setIsPremium(hasEntitlement(info));
+        if (!isAdminRef.current) setIsPremium(hasEntitlement(info));
       });
     } catch {}
     return () => { try { remove?.(); } catch {} };

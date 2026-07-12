@@ -34,3 +34,7 @@ export function addCustomerInfoListener(callback) {
 export function hasEntitlement(customerInfo) {
   return !!customerInfo?.entitlements?.active?.['premium_access'];
 }
+
+export async function showManageSubscriptions() {
+  return Purchases.showManageSubscriptions();
+}

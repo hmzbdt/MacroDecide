@@ -79,9 +79,6 @@ export default function PaywallModal({ visible, onClose }) {
         >
           {/* Hero */}
           <View style={pw.heroWrap}>
-            <View style={pw.iconCircle}>
-              <Ionicons name="flash" size={32} color={C.accent} />
-            </View>
             <Text style={pw.headline}>Unlock Unlimited Clarity</Text>
             <Text style={pw.subtext}>
               Stop overthinking the menu. Don't feel bad about your diet when eating out
@@ -90,7 +87,6 @@ export default function PaywallModal({ visible, onClose }) {
             </Text>
             {scanTokens !== null && scanTokens <= 0 && (
               <View style={pw.tokensEmpty}>
-                <Ionicons name="scan-outline" size={13} color="#FF3B30" style={{ marginRight: 5 }} />
                 <Text style={pw.tokensEmptyTxt}>You've used all your free scans</Text>
               </View>
             )}
@@ -209,13 +205,6 @@ const pw = StyleSheet.create({
   scroll: { paddingHorizontal: 24, paddingBottom: 48 },
 
   heroWrap:   { alignItems: 'center', paddingVertical: 28 },
-  iconCircle: {
-    width: 76, height: 76, borderRadius: 38,
-    backgroundColor: 'rgba(0,122,255,0.1)',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 20,
-    shadowColor: C.accent, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15, shadowRadius: 12, elevation: 3,
-  },
   headline: {
     fontSize: 30, fontWeight: '800', color: '#1D1D1F',
     textAlign: 'center', letterSpacing: -0.5, marginBottom: 12,
@@ -231,7 +220,7 @@ const pw = StyleSheet.create({
   },
   tokensEmptyTxt: { fontSize: 13, fontWeight: '600', color: '#FF3B30' },
 
-  featureList: { paddingHorizontal: 24, marginTop: 4 },
+  featureList: { marginTop: 4 },
   featureRow:  { marginBottom: 20 },
   featureTag:  { fontSize: 15, fontWeight: '700', color: '#1D1D1F' },
   featureTxt:  { fontSize: 15, fontWeight: '400', color: '#1D1D1F', lineHeight: 22 },

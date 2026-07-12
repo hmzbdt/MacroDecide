@@ -28,6 +28,7 @@ import { db }                                                from './src/config/
 import { AuthProvider, useAuth }                             from './src/context/AuthContext';
 import LoginScreen                                           from './src/components/LoginScreen';
 import PaywallModal                                          from './src/components/PaywallModal';
+import { showManageSubscriptions }                           from './src/services/billingService';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CACHE_PREFIX   = 'menu_v2_';
@@ -1216,6 +1217,80 @@ function AppInner() {
                     </View>
                   )}
                 </TouchableOpacity>
+
+                {/* ── Subscription Status Card ────────────────────────── */}
+                <View style={{
+                  paddingHorizontal: 16, paddingVertical: 14,
+                  borderBottomWidth: 1, borderBottomColor: '#F2F2F7',
+                }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 13, fontWeight: '500', color: '#86868B' }}>
+                      Current Tier
+                    </Text>
+                    {isPremium ? (
+                      <View style={{
+                        backgroundColor: 'rgba(0,122,255,0.1)', borderRadius: 20,
+                        paddingHorizontal: 11, paddingVertical: 4,
+                      }}>
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#007AFF', letterSpacing: 0.1 }}>
+                          MacroDecide Premium
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={{
+                        backgroundColor: '#F2F2F7', borderRadius: 20,
+                        paddingHorizontal: 11, paddingVertical: 4,
+                      }}>
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#86868B' }}>
+                          Free Tier
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  {!isPremium && (
+                    <Text style={{ fontSize: 11, color: '#86868B', marginTop: 7 }}>
+                      {`Remaining Scans Today: ${Math.max(scanTokens, 0)} / 3`}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Manage Subscription / Upgrade row */}
+                {isPremium ? (
+                  <TouchableOpacity
+                    style={{
+                      paddingHorizontal: 16, paddingVertical: 14,
+                      borderBottomWidth: 1, borderBottomColor: '#F2F2F7',
+                      flexDirection: 'row', alignItems: 'center',
+                    }}
+                    onPress={() => showManageSubscriptions().catch(() => {})}
+                    activeOpacity={0.65}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#1D1D1F', marginBottom: 3 }}>
+                        Manage Subscription
+                      </Text>
+                      <Text style={{ fontSize: 12, color: C.muted }}>
+                        Active Plan — Tap to manage or cancel
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={C.muted} />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={{
+                      paddingHorizontal: 16, paddingVertical: 14,
+                      borderBottomWidth: 1, borderBottomColor: '#F2F2F7',
+                      flexDirection: 'row', alignItems: 'center',
+                    }}
+                    onPress={() => setShowPaywall(true)}
+                    activeOpacity={0.65}
+                  >
+                    <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: C.accent }}>
+                      Upgrade to Premium
+                    </Text>
+                    <Ionicons name="chevron-forward" size={16} color={C.muted} />
+                  </TouchableOpacity>
+                )}
 
                 {/* Sign Out row */}
                 <TouchableOpacity
